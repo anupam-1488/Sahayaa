@@ -116,7 +116,7 @@ const Login = ({ showLogin, setShowLogin, setUser }) => {
             </div>
           </div>
           
-          <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+          {/* <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
             <div className="flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5" />
               <div>
@@ -127,7 +127,7 @@ const Login = ({ showLogin, setShowLogin, setUser }) => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
           
           <div className="flex space-x-3">
             <button

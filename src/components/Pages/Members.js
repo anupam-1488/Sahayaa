@@ -58,7 +58,7 @@ const Members = ({
       <PageHeader />
       
       {/* Privacy Notice for non-admin users */}
-      {!user && <PrivacyNotice />}
+      {/* {!user && <PrivacyNotice />} */}
       
       {user && <AdminSection setShowMemberForm={setShowMemberForm} />}
       
@@ -109,21 +109,21 @@ const PageHeader = () => (
   </div>
 );
 
-const PrivacyNotice = () => (
-  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-    <div className="flex items-start space-x-3">
-      <Shield className="w-6 h-6 text-blue-600 mt-1" />
-      <div>
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Privacy Protected</h3>
-        <p className="text-blue-700 text-sm leading-relaxed">
-          To protect our organization members' privacy, personal contact information is not publicly displayed. 
-          For official communication or inquiries about our organization structure, please use our official 
-          contact details available in the Contact section.
-        </p>
-      </div>
-    </div>
-  </div>
-);
+// const PrivacyNotice = () => (
+//   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+//     <div className="flex items-start space-x-3">
+//       <Shield className="w-6 h-6 text-blue-600 mt-1" />
+//       <div>
+//         <h3 className="text-lg font-semibold text-blue-800 mb-2">Privacy Protected</h3>
+//         <p className="text-blue-700 text-sm leading-relaxed">
+//           To protect our organization members' privacy, personal contact information is not publicly displayed. 
+//           For official communication or inquiries about our organization structure, please use our official 
+//           contact details available in the Contact section.
+//         </p>
+//       </div>
+//     </div>
+//   </div>
+// );
 
 const AdminSection = ({ setShowMemberForm }) => (
   <div className="flex justify-center">
@@ -245,7 +245,7 @@ const OrganizationMembers = ({ members, user, onEdit, onDelete }) => {
   return (
     <div className="space-y-8">
       {/* Admin Position Info */}
-      {user && (
+      {/* {user && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <h4 className="font-medium text-green-800 mb-2">🎯 Organization Hierarchy:</h4>
           <p className="text-sm text-green-700">
@@ -253,10 +253,10 @@ const OrganizationMembers = ({ members, user, onEdit, onDelete }) => {
             Edit any member to change their hierarchy position within the organization.
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Public View Info */}
-      {!user && (
+      {/* {!user && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-2">
             <Eye className="w-5 h-5 text-blue-600" />
@@ -267,7 +267,7 @@ const OrganizationMembers = ({ members, user, onEdit, onDelete }) => {
             member roles are displayed for transparency while maintaining individual privacy.
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Executive Leadership Section */}
       <ExecutiveSection members={members} user={user} onEdit={onEdit} onDelete={onDelete} />

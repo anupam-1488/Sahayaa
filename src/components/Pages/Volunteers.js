@@ -82,7 +82,7 @@ const Volunteers = ({
       {/* <VolunteerPortalAccess onOpenPortal={openVolunteerPortal} /> */}
       
       {/* Privacy Notice for non-admin users */}
-      {!user && <PrivacyNotice />}
+      {/* {!user && <PrivacyNotice />} */}
       
       {user && <AdminSection setShowVolunteerForm={setShowVolunteerForm} />}
       
@@ -149,21 +149,21 @@ const PageHeader = () => (
   </div>
 );
 
-const PrivacyNotice = () => (
-  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-    <div className="flex items-start space-x-3">
-      <Shield className="w-6 h-6 text-blue-600 mt-1" />
-      <div>
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Privacy Protected</h3>
-        <p className="text-blue-700 text-sm leading-relaxed">
-          To protect our volunteers' privacy, personal contact information is not publicly displayed. 
-          Volunteers can access their personal portal using the button above. For any volunteer-related 
-          inquiries, please contact our organization directly.
-        </p>
-      </div>
-    </div>
-  </div>
-);
+// const PrivacyNotice = () => (
+//   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+//     <div className="flex items-start space-x-3">
+//       <Shield className="w-6 h-6 text-blue-600 mt-1" />
+//       <div>
+//         <h3 className="text-lg font-semibold text-blue-800 mb-2">Privacy Protected</h3>
+//         <p className="text-blue-700 text-sm leading-relaxed">
+//           To protect our volunteers' privacy, personal contact information is not publicly displayed. 
+//           Volunteers can access their personal portal using the button above. For any volunteer-related 
+//           inquiries, please contact our organization directly.
+//         </p>
+//       </div>
+//     </div>
+//   </div>
+// );
 
 // const VolunteerPortalAccess = ({ onOpenPortal }) => (
 //   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-8">

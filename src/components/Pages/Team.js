@@ -192,7 +192,7 @@ const TeamMembers = ({ members, user, onEdit, onDelete }) => {
       )}
 
       {/* Public Info */}
-      {!user && (
+      {/* {!user && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-2">
             <Eye className="w-5 h-5 text-blue-600" />
@@ -203,7 +203,7 @@ const TeamMembers = ({ members, user, onEdit, onDelete }) => {
             please use our organization's contact details.
           </p>
         </div>
-      )}
+      )} */}
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {members.map((member, index) => (
