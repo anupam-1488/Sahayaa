@@ -37,7 +37,6 @@ const Footer = ({ setActiveSection }) => {
     <SocialLink href={CONTACT_INFO.socialMedia.youtube} icon={Youtube} />
   </div>
 </div>
-
           
           {/* Quick Links */}
           <div>

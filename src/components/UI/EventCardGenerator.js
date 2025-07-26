@@ -6,12 +6,32 @@ const EventCardGenerator = ({ event, onClose }) => {
   const canvasRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [cardGenerated, setCardGenerated] = useState(false);
+  const [logoImage, setLogoImage] = useState(null);
 
   useEffect(() => {
-    if (event) {
+    loadLogo();
+  }, []);
+
+  useEffect(() => {
+    if (event && logoImage) {
       generateCard();
     }
-  }, [event]);
+  }, [event, logoImage]);
+
+  const loadLogo = () => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      setLogoImage(img);
+    };
+    img.onerror = () => {
+      // If logo fails to load, we'll generate without it
+      console.warn('Logo failed to load, generating card without logo');
+      setLogoImage('fallback');
+    };
+    // Try to load the logo from public folder
+    img.src = '/logo.jpg';
+  };
 
   const generateCard = async () => {
     setIsGenerating(true);
@@ -46,20 +66,56 @@ const EventCardGenerator = ({ event, onClose }) => {
       const contentY = 120;
       const contentHeight = canvas.height - 240;
       
-      // White content background
+      // White content background with rounded corners
       ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
       ctx.roundRect(60, contentY, canvas.width - 120, contentHeight, 20);
       ctx.fill();
 
-      // Sahayaa Trust Logo/Header
-      ctx.fillStyle = '#16a34a';
-      ctx.font = 'bold 48px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('♥ SAHAYAA TRUST', canvas.width / 2, contentY + 80);
+      // Logo watermark in background
+      if (logoImage && logoImage !== 'fallback') {
+        ctx.save();
+        ctx.globalAlpha = 0.1;
+        const logoSize = 300;
+        const logoX = (canvas.width - logoSize) / 2;
+        const logoY = (canvas.height - logoSize) / 2;
+        
+        ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      }
 
+      // Header section with logo
+      const headerY = contentY + 40;
+      
+      // Small logo in header
+      if (logoImage && logoImage !== 'fallback') {
+        const smallLogoSize = 60;
+        const logoX = (canvas.width - smallLogoSize) / 2 - 100;
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(logoX + smallLogoSize/2, headerY + smallLogoSize/2, smallLogoSize/2, 0, 2 * Math.PI);
+        ctx.clip();
+        ctx.drawImage(logoImage, logoX, headerY, smallLogoSize, smallLogoSize);
+        ctx.restore();
+        
+        // Organization name next to logo
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 42px Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('SAHAYAA TRUST', logoX + smallLogoSize + 20, headerY + 35);
+      } else {
+        // Fallback - just text with heart emoji
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 48px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('♥ SAHAYAA TRUST', canvas.width / 2, headerY + 40);
+      }
+
+      // Tagline
       ctx.fillStyle = '#059669';
       ctx.font = '28px Arial, sans-serif';
-      ctx.fillText('"The one who stands with you"', canvas.width / 2, contentY + 120);
+      ctx.textAlign = 'center';
+      ctx.fillText('"The one who stands with you"', canvas.width / 2, headerY + 90);
 
       // Event title
       ctx.fillStyle = '#1f2937';
@@ -71,7 +127,7 @@ const EventCardGenerator = ({ event, onClose }) => {
       const maxWidth = canvas.width - 200;
       const words = title.split(' ');
       let line = '';
-      let y = contentY + 200;
+      let y = contentY + 220;
       
       for (let n = 0; n < words.length; n++) {
         const testLine = line + words[n] + ' ';
@@ -88,18 +144,18 @@ const EventCardGenerator = ({ event, onClose }) => {
       }
       ctx.fillText(line, canvas.width / 2, y);
 
-      // Event details
-      const detailsY = y + 100;
+      // Event details section
+      const detailsY = y + 80;
       ctx.font = '36px Arial, sans-serif';
       ctx.fillStyle = '#374151';
 
-      // Date
+      // Date with icon
       ctx.fillText(`📅 ${formatDate(event.date)}`, canvas.width / 2, detailsY);
       
-      // Time
+      // Time with icon
       ctx.fillText(`🕐 ${event.time}`, canvas.width / 2, detailsY + 50);
       
-      // Location
+      // Location with icon
       ctx.font = '32px Arial, sans-serif';
       const location = event.location.length > 40 ? event.location.substring(0, 40) + '...' : event.location;
       ctx.fillText(`📍 ${location}`, canvas.width / 2, detailsY + 100);
@@ -114,28 +170,31 @@ const EventCardGenerator = ({ event, onClose }) => {
       ctx.fillText(event.category, canvas.width / 2, detailsY + 175);
 
       // Registration info
-      if (event.registrationRequired) {
+      if (event.registration_required) {
         ctx.fillStyle = '#dc2626';
         ctx.font = 'bold 32px Arial, sans-serif';
         ctx.fillText('⚠️ Registration Required', canvas.width / 2, detailsY + 230);
       }
 
       // Contact info
-      if (event.contactEmail) {
+      if (event.contact_email) {
         ctx.fillStyle = '#6b7280';
         ctx.font = '28px Arial, sans-serif';
-        ctx.fillText(`📧 ${event.contactEmail}`, canvas.width / 2, detailsY + 280);
+        ctx.fillText(`📧 ${event.contact_email}`, canvas.width / 2, detailsY + 280);
       }
 
-      // Footer
+      // Call to action
       ctx.fillStyle = '#16a34a';
-      ctx.font = 'bold 32px Arial, sans-serif';
-      ctx.fillText('Join us in making a difference!', canvas.width / 2, contentY + contentHeight - 60);
+      ctx.font = 'bold 36px Arial, sans-serif';
+      ctx.fillText('Join us in making a difference!', canvas.width / 2, contentY + contentHeight - 80);
 
-      // Social media handle (placeholder)
+      // Social media handles and hashtags
       ctx.fillStyle = '#6b7280';
       ctx.font = '24px Arial, sans-serif';
-      ctx.fillText('@SahayaaTrust | #CommunitySupport | #MakeADifference', canvas.width / 2, contentY + contentHeight - 20);
+      ctx.fillText('@SahayaaTrust | #CommunitySupport | #MakeADifference', canvas.width / 2, contentY + contentHeight - 40);
+
+      // Decorative elements
+      drawDecorative(ctx, canvas);
 
       setCardGenerated(true);
     } catch (error) {
@@ -143,6 +202,67 @@ const EventCardGenerator = ({ event, onClose }) => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const drawDecorative = (ctx, canvas) => {
+    // Corner decorations
+    const corners = [
+      { x: 80, y: 140 },
+      { x: canvas.width - 80, y: 140 },
+      { x: 80, y: canvas.height - 140 },
+      { x: canvas.width - 80, y: canvas.height - 140 }
+    ];
+
+    ctx.strokeStyle = '#16a34a';
+    ctx.lineWidth = 4;
+    
+    corners.forEach(corner => {
+      ctx.beginPath();
+      // Draw decorative corner elements
+      if (corner.x < canvas.width / 2 && corner.y < canvas.height / 2) {
+        // Top-left
+        ctx.moveTo(corner.x - 15, corner.y);
+        ctx.lineTo(corner.x + 15, corner.y);
+        ctx.moveTo(corner.x, corner.y - 15);
+        ctx.lineTo(corner.x, corner.y + 15);
+      } else if (corner.x > canvas.width / 2 && corner.y < canvas.height / 2) {
+        // Top-right
+        ctx.moveTo(corner.x - 15, corner.y);
+        ctx.lineTo(corner.x + 15, corner.y);
+        ctx.moveTo(corner.x, corner.y - 15);
+        ctx.lineTo(corner.x, corner.y + 15);
+      } else if (corner.x < canvas.width / 2 && corner.y > canvas.height / 2) {
+        // Bottom-left
+        ctx.moveTo(corner.x - 15, corner.y);
+        ctx.lineTo(corner.x + 15, corner.y);
+        ctx.moveTo(corner.x, corner.y - 15);
+        ctx.lineTo(corner.x, corner.y + 15);
+      } else {
+        // Bottom-right
+        ctx.moveTo(corner.x - 15, corner.y);
+        ctx.lineTo(corner.x + 15, corner.y);
+        ctx.moveTo(corner.x, corner.y - 15);
+        ctx.lineTo(corner.x, corner.y + 15);
+      }
+      ctx.stroke();
+    });
+
+    // Add some decorative hearts
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.3)';
+    ctx.font = '40px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    
+    // Scattered hearts as decoration
+    const hearts = [
+      { x: 150, y: 200 },
+      { x: canvas.width - 150, y: 250 },
+      { x: 120, y: canvas.height - 200 },
+      { x: canvas.width - 120, y: canvas.height - 180 }
+    ];
+    
+    hearts.forEach(heart => {
+      ctx.fillText('♥', heart.x, heart.y);
+    });
   };
 
   const formatDate = (dateString) => {
@@ -159,7 +279,7 @@ const EventCardGenerator = ({ event, onClose }) => {
     const canvas = canvasRef.current;
     const link = document.createElement('a');
     link.download = `sahayaa-${event.title.replace(/\s+/g, '-').toLowerCase()}-invitation.png`;
-    link.href = canvas.toDataURL('image/png');
+    link.href = canvas.toDataURL('image/png', 1.0);
     link.click();
   };
 
@@ -280,10 +400,23 @@ const EventCardGenerator = ({ event, onClose }) => {
                     <li>• WhatsApp group sharing</li>
                     <li>• Print materials</li>
                     <li>• Email announcements</li>
+                    <li>• Community bulletin boards</li>
                   </ul>
                 </div>
               </div>
             )}
+
+            {/* Features */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h6 className="font-medium text-green-800 mb-2">Card Features:</h6>
+              <ul className="text-sm text-green-700 space-y-1">
+                <li>• High-resolution 1080x1080 format</li>
+                <li>• Professional Sahayaa Trust branding</li>
+                <li>• Logo watermark for authenticity</li>
+                <li>• Social media optimized</li>
+                <li>• Eye-catching gradient design</li>
+              </ul>
+            </div>
 
             {/* Regenerate Option */}
             <div className="pt-4 border-t border-gray-200">

@@ -1,37 +1,28 @@
 {
-  "name": "sahayaa-trust",
+  "name": "sahayaa-trust-website",
   "version": "1.0.0",
-  "description": "A comprehensive web application for Sahayaa Trust - Building a compassionate society",
-  "homepage": "https://sahayaa-trust.vercel.app",
+  "description": "Official website for Sahayaa Trust - Building a compassionate society",
   "private": true,
+  "homepage": "https://sahayaa-trust.vercel.app",
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.4",
+    "@supabase/supabase-js": "^2.39.3",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
+    "@testing-library/user-event": "^14.5.2",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
-  "devDependencies": {
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/typography": "^0.5.16",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
-  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "tailwind:build": "tailwindcss build src/index.css -o src/tailwind.css",
-    "tailwind:watch": "tailwindcss build src/index.css -o src/tailwind.css --watch",
-    "predeploy": "npm run build",
-    "deploy": "npm run build"
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,json,css,md}"
   },
   "eslintConfig": {
     "extends": [
@@ -51,24 +42,23 @@
       "last 1 safari version"
     ]
   },
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.1"
+  },
   "keywords": [
-    "sahayaa",
-    "trust",
+    "sahayaa-trust",
     "ngo",
     "charity",
-    "community",
-    "education",
-    "health",
-    "welfare",
+    "community-service",
+    "social-impact",
     "react",
-    "supabase",
-    "tailwindcss"
+    "supabase"
   ],
-  "author": {
-    "name": "Sahayaa Trust",
-    "email": "contact@sahayaa.org",
-    "url": "https://sahayaa.org"
-  },
+  "author": "Sahayaa Trust",
   "license": "MIT",
   "repository": {
     "type": "git",

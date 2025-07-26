@@ -1,6 +1,6 @@
-// src/components/Pages/Team.js
+// src/components/Pages/Team.js - Updated with Privacy Protection
 import React, { useState } from 'react';
-import { Users, Plus, Edit3, Trash2, User, Mail, Phone, MessageCircle } from 'lucide-react';
+import { Users, Plus, Edit3, Trash2, User, Mail, Phone, MessageCircle, Shield, Eye, EyeOff } from 'lucide-react';
 import MemberForm from '../Forms/MemberForm';
 import TestimonialForm from '../Forms/TestimonialForm';
 
@@ -30,7 +30,6 @@ const Team = ({
           alert('Failed to delete member: ' + result.error);
         }
       } else {
-        // Fallback to local state
         setMembers(members.filter(member => member.id !== id));
       }
     }
@@ -44,7 +43,6 @@ const Team = ({
           alert('Failed to delete testimonial: ' + result.error);
         }
       } else {
-        // Fallback to local state
         setTestimonials(testimonials.filter(testimonial => testimonial.id !== id));
       }
     }
@@ -60,9 +58,19 @@ const Team = ({
     setShowTestimonialForm(true);
   };
 
+  // Sort members by position (ascending order)
+  const sortedMembers = [...members].sort((a, b) => {
+    const positionA = a.position || 999;
+    const positionB = b.position || 999;
+    return positionA - positionB;
+  });
+
   return (
     <div className="space-y-12">
       <PageHeader />
+      
+      {/* Privacy Notice for non-admin users */}
+      {/* {!user && <PrivacyNotice />} */}
       
       {user && <AdminSection 
         setShowMemberForm={setShowMemberForm}
@@ -70,34 +78,38 @@ const Team = ({
       />}
       
       <TeamMembers 
-        members={members}
+        members={sortedMembers}
         user={user}
         onEdit={startEditMember}
         onDelete={handleDeleteMember}
       />
 
       {/* Forms */}
-      <MemberForm
-        show={showMemberForm}
-        setShow={setShowMemberForm}
-        members={members}
-        setMembers={setMembers}
-        editingMember={editingMember}
-        setEditingMember={setEditingMember}
-        onMemberCreate={onMemberCreate}
-        onMemberUpdate={onMemberUpdate}
-      />
+      {user && (
+        <>
+          <MemberForm
+            show={showMemberForm}
+            setShow={setShowMemberForm}
+            members={members}
+            setMembers={setMembers}
+            editingMember={editingMember}
+            setEditingMember={setEditingMember}
+            onMemberCreate={onMemberCreate}
+            onMemberUpdate={onMemberUpdate}
+          />
 
-      <TestimonialForm
-        show={showTestimonialForm}
-        setShow={setShowTestimonialForm}
-        testimonials={testimonials}
-        setTestimonials={setTestimonials}
-        editingTestimonial={editingTestimonial}
-        setEditingTestimonial={setEditingTestimonial}
-        onTestimonialCreate={onTestimonialCreate}
-        onTestimonialUpdate={onTestimonialUpdate}
-      />
+          <TestimonialForm
+            show={showTestimonialForm}
+            setShow={setShowTestimonialForm}
+            testimonials={testimonials}
+            setTestimonials={setTestimonials}
+            editingTestimonial={editingTestimonial}
+            setEditingTestimonial={setEditingTestimonial}
+            onTestimonialCreate={onTestimonialCreate}
+            onTestimonialUpdate={onTestimonialUpdate}
+          />
+        </>
+      )}
     </div>
   );
 };
@@ -111,6 +123,22 @@ const PageHeader = () => (
     </p>
   </div>
 );
+
+// const PrivacyNotice = () => (
+//   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+//     <div className="flex items-start space-x-3">
+//       <Shield className="w-6 h-6 text-blue-600 mt-1" />
+//       <div>
+//         <h3 className="text-lg font-semibold text-blue-800 mb-2">Privacy Protected</h3>
+//         <p className="text-blue-700 text-sm leading-relaxed">
+//           To protect our team members' privacy, personal contact information is not publicly displayed. 
+//           For official communication or inquiries about our team, please use our organization's contact details 
+//           available in the Contact section.
+//         </p>
+//       </div>
+//     </div>
+//   </div>
+// );
 
 const AdminSection = ({ setShowMemberForm, setShowTestimonialForm }) => (
   <div className="flex justify-center space-x-4">
@@ -147,16 +175,48 @@ const TeamMembers = ({ members, user, onEdit, onDelete }) => {
   }
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {members.map((member) => (
-        <MemberCard
-          key={member.id}
-          member={member}
-          user={user}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
+    <div className="space-y-8">
+      {/* Admin Info */}
+      {user && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Shield className="w-5 h-5 text-green-600" />
+            <h4 className="font-medium text-green-800">Admin View - Full Access</h4>
+          </div>
+          <p className="text-sm text-green-700">
+            You can see all team member information including contact details. 
+            Team members are displayed based on their position number (1 = first, 2 = second, etc.). 
+            Edit any member to change their display position.
+          </p>
+        </div>
+      )}
+
+      {/* Public Info */}
+      {!user && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Eye className="w-5 h-5 text-blue-600" />
+            <h4 className="font-medium text-blue-800">Public View</h4>
+          </div>
+          <p className="text-sm text-blue-700">
+            Personal contact information is protected for privacy. For official communication, 
+            please use our organization's contact details.
+          </p>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {members.map((member, index) => (
+          <MemberCard
+            key={member.id}
+            member={member}
+            user={user}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            displayIndex={index + 1}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -172,8 +232,28 @@ const EmptyState = () => (
   </div>
 );
 
-const MemberCard = ({ member, user, onEdit, onDelete }) => (
-  <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+const MemberCard = ({ member, user, onEdit, onDelete, displayIndex }) => (
+  <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 relative">
+    {/* Admin position indicator */}
+    {user && (
+      <div className="absolute top-4 left-4 z-10">
+        <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
+          <span>#{displayIndex}</span>
+          <span className="text-blue-200">({member.position || 'No pos.'})</span>
+        </div>
+      </div>
+    )}
+    
+    {/* Privacy indicator for non-admin users */}
+    {!user && (
+      <div className="absolute top-4 left-4 z-10">
+        <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+          <Shield className="w-3 h-3" />
+          <span>Privacy Protected</span>
+        </div>
+      </div>
+    )}
+    
     <MemberImage member={member} />
     <MemberContent member={member} user={user} onEdit={onEdit} onDelete={onDelete} />
   </div>
@@ -199,7 +279,7 @@ const MemberContent = ({ member, user, onEdit, onDelete }) => (
     <h3 className="text-2xl font-bold text-green-800 mb-2">{member.name}</h3>
     <p className="text-green-600 font-semibold mb-1">{member.role}</p>
     
-    <ContactInfo member={member} />
+    <ContactInfo member={member} user={user} />
     
     <p className="text-gray-700 text-sm leading-relaxed mb-4">{member.bio}</p>
     
@@ -209,23 +289,41 @@ const MemberContent = ({ member, user, onEdit, onDelete }) => (
   </div>
 );
 
-const ContactInfo = ({ member }) => (
-  <>
-    {member.email && (
-      <div className="flex items-center text-sm text-gray-600 mb-1">
-        <Mail className="w-4 h-4 mr-2" />
-        <span>{member.email}</span>
+const ContactInfo = ({ member, user }) => {
+  if (user) {
+    // Admin view - show all contact information
+    return (
+      <>
+        {member.email && (
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <Mail className="w-4 h-4 mr-2" />
+            <span>{member.email}</span>
+          </div>
+        )}
+        
+        {member.phone && (
+          <div className="flex items-center text-sm text-gray-600 mb-4">
+            <Phone className="w-4 h-4 mr-2" />
+            <span>{member.phone}</span>
+          </div>
+        )}
+      </>
+    );
+  } else {
+    // Public view - show privacy protection message
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div className="flex items-center space-x-2">
+          <Shield className="w-4 h-4 text-blue-600" />
+          <span className="text-blue-700 text-sm">Contact details protected for privacy</span>
+        </div>
+        <p className="text-blue-600 text-xs mt-1">
+          For official communication, please use our organization's contact information
+        </p>
       </div>
-    )}
-    
-    {member.phone && (
-      <div className="flex items-center text-sm text-gray-600 mb-4">
-        <Phone className="w-4 h-4 mr-2" />
-        <span>{member.phone}</span>
-      </div>
-    )}
-  </>
-);
+    );
+  }
+};
 
 const ExpertiseList = ({ expertise }) => {
   if (!expertise || expertise.length === 0) return null;
@@ -250,19 +348,22 @@ const MemberAdminActions = ({ member, onEdit, onDelete }) => (
       onClick={() => onEdit(member)}
       className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
       icon={Edit3}
+      title="Edit Member"
     />
     <ActionButton
       onClick={() => onDelete(member.id)}
       className="text-red-600 hover:text-red-800 hover:bg-red-50"
       icon={Trash2}
+      title="Delete Member"
     />
   </div>
 );
 
-const ActionButton = ({ onClick, className, icon: Icon }) => (
+const ActionButton = ({ onClick, className, icon: Icon, title }) => (
   <button
     onClick={onClick}
     className={`p-2 rounded-lg transition-colors ${className}`}
+    title={title}
   >
     <Icon className="w-4 h-4" />
   </button>

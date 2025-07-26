@@ -1,4 +1,4 @@
-// src/components/Auth/Login.js
+// src/components/Auth/Login.js - Fixed for modern Supabase
 import React, { useState } from 'react';
 import { Heart, Eye, EyeOff, X, AlertCircle } from 'lucide-react';
 import { auth } from '../../config/supabase';
@@ -19,20 +19,25 @@ const Login = ({ showLogin, setShowLogin, setUser }) => {
     setError('');
     
     try {
-      const { user, error } = await auth.signIn(loginForm.email, loginForm.password);
+      // Updated method for modern Supabase
+      const { data, error: authError } = await auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
+      });
 
-      if (error) {
-        setError(error);
+      if (authError) {
+        setError(authError.message);
         return;
       }
 
-      if (user) {
-        setUser(user);
+      if (data.user) {
+        setUser(data.user);
         setShowLogin(false);
         setLoginForm({ email: '', password: '' });
         setError('');
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('Login failed: ' + error.message);
     } finally {
       setAuthLoading(false);

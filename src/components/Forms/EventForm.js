@@ -1,6 +1,6 @@
-// src/components/Forms/EventForm.js
+// src/components/Forms/EventForm.js - Updated with missing fields
 import React, { useState, useEffect } from 'react';
-import { X, Save, Download } from 'lucide-react';
+import { X, Save, Download, Star } from 'lucide-react';
 import Modal from '../UI/Modal';
 import ImageUpload from '../UI/ImageUpload';
 import EventCardGenerator from '../UI/EventCardGenerator';
@@ -26,7 +26,10 @@ const EventForm = ({
     image: '',
     capacity: '',
     registration_required: false,
-    contact_email: ''
+    contact_email: '',
+    is_featured: false,
+    event_status: 'upcoming',
+    gallery_images: []
   });
 
   const [errors, setErrors] = useState({});
@@ -38,7 +41,10 @@ const EventForm = ({
     if (editingEvent) {
       setFormData({
         ...editingEvent,
-        registration_required: editingEvent.registration_required || false
+        registration_required: editingEvent.registration_required || false,
+        is_featured: editingEvent.is_featured || false,
+        event_status: editingEvent.event_status || 'upcoming',
+        gallery_images: editingEvent.gallery_images || []
       });
     } else {
       resetForm();
@@ -56,7 +62,10 @@ const EventForm = ({
       image: '',
       capacity: '',
       registration_required: false,
-      contact_email: ''
+      contact_email: '',
+      is_featured: false,
+      event_status: 'upcoming',
+      gallery_images: []
     });
     setErrors({});
   };
@@ -92,8 +101,8 @@ const EventForm = ({
       newErrors.capacity = 'Capacity must be a positive number';
     }
 
-    // Check if date is in the past
-    if (formData.date) {
+    // Check if date is in the past for new events
+    if (formData.date && !editingEvent) {
       const eventDate = new Date(formData.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -120,35 +129,45 @@ const EventForm = ({
     setSaving(true);
 
     try {
+      // Automatically determine event status based on date
+      const eventDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const eventDataWithStatus = {
+        ...formData,
+        event_status: eventDate >= today ? 'upcoming' : 'completed'
+      };
+
       let savedEvent;
       let result;
       
       if (editingEvent) {
         // Update existing event
         if (onEventUpdate) {
-          result = await onEventUpdate(editingEvent.id, formData);
-          savedEvent = { ...formData, id: editingEvent.id };
+          result = await onEventUpdate(editingEvent.id, eventDataWithStatus);
+          savedEvent = { ...eventDataWithStatus, id: editingEvent.id };
         } else {
           // Fallback to local state if no database function
           const updatedEvents = events.map(event => 
-            event.id === editingEvent.id ? { ...formData, id: editingEvent.id } : event
+            event.id === editingEvent.id ? { ...eventDataWithStatus, id: editingEvent.id } : event
           );
           setEvents(updatedEvents);
-          savedEvent = { ...formData, id: editingEvent.id };
+          savedEvent = { ...eventDataWithStatus, id: editingEvent.id };
           result = { success: true };
         }
         setEditingEvent(null);
       } else {
         // Create new event
         if (onEventCreate) {
-          result = await onEventCreate(formData);
+          result = await onEventCreate(eventDataWithStatus);
           if (result && result.success) {
             // For new events, we might not have the ID immediately, so we'll use a temporary one
-            savedEvent = { ...formData, id: Date.now() };
+            savedEvent = { ...eventDataWithStatus, id: Date.now() };
           }
         } else {
           // Fallback to local state if no database function
-          const newEvent = { ...formData, id: Date.now() };
+          const newEvent = { ...eventDataWithStatus, id: Date.now() };
           setEvents([...events, newEvent]);
           savedEvent = newEvent;
           result = { success: true };
@@ -302,12 +321,43 @@ const EventForm = ({
               required
             />
             
-            {/* Registration Required */}
-            <CheckboxField
-              label="Registration Required"
-              checked={formData.registration_required}
-              onChange={(checked) => setFormData({...formData, registration_required: checked})}
-            />
+            {/* Event Settings */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+              <h4 className="font-semibold text-gray-800">Event Settings</h4>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Registration Required */}
+                <CheckboxField
+                  label="Registration Required"
+                  checked={formData.registration_required}
+                  onChange={(checked) => setFormData({...formData, registration_required: checked})}
+                />
+                
+                {/* Featured Event */}
+                <CheckboxField
+                  label="Featured Event"
+                  checked={formData.is_featured}
+                  onChange={(checked) => setFormData({...formData, is_featured: checked})}
+                  helpText="Featured events are highlighted on the home page"
+                />
+              </div>
+              
+              {/* Event Status - Only show for editing existing events */}
+              {editingEvent && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Event Status</label>
+                  <select
+                    value={formData.event_status}
+                    onChange={(e) => setFormData({...formData, event_status: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="upcoming">Upcoming</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              )}
+            </div>
             
             {/* Action Buttons */}
             <div className="space-y-3">
@@ -363,7 +413,8 @@ const FormField = ({
   onChange, 
   placeholder, 
   error, 
-  required 
+  required,
+  helpText 
 }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -393,6 +444,9 @@ const FormField = ({
     {error && (
       <p className="text-red-500 text-xs mt-1">{error}</p>
     )}
+    {helpText && (
+      <p className="text-gray-500 text-xs mt-1">{helpText}</p>
+    )}
   </div>
 );
 
@@ -413,18 +467,24 @@ const CategorySelect = ({ value, onChange }) => (
   </div>
 );
 
-const CheckboxField = ({ label, checked, onChange }) => (
-  <div className="flex items-center">
-    <input
-      type="checkbox"
-      id="registrationRequired"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-    />
-    <label htmlFor="registrationRequired" className="text-sm font-medium text-gray-700">
-      {label}
-    </label>
+const CheckboxField = ({ label, checked, onChange, helpText }) => (
+  <div>
+    <div className="flex items-center">
+      <input
+        type="checkbox"
+        id={label.replace(/\s+/g, '')}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+      />
+      <label htmlFor={label.replace(/\s+/g, '')} className="text-sm font-medium text-gray-700 flex items-center">
+        {label}
+        {label.includes('Featured') && <Star className="w-4 h-4 ml-1 text-yellow-500" />}
+      </label>
+    </div>
+    {helpText && (
+      <p className="text-gray-500 text-xs mt-1 ml-7">{helpText}</p>
+    )}
   </div>
 );
 
