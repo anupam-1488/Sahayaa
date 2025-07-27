@@ -1,4 +1,4 @@
-// src/config/supabase.js - Modern Supabase Configuration
+// src/config/supabase.js - Updated with Donations Functions
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -292,6 +292,118 @@ export const db = {
     }
   },
 
+  // Donations - New Functions
+  getDonations: async (limit = null, offset = 0) => {
+    try {
+      let query = supabase
+        .from('donations')
+        .select('*')
+        .eq('payment_status', 'completed')
+        .order('created_at', { ascending: false });
+      
+      if (limit) {
+        query = query.range(offset, offset + limit - 1);
+      }
+
+      const { data, error } = await query;
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
+  },
+
+  getDonationStats: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('amount, cause, created_at, donor_name')
+        .eq('payment_status', 'completed');
+
+      if (error) throw error;
+
+      const stats = {
+        totalDonations: data.length,
+        totalAmount: data.reduce((sum, donation) => sum + parseFloat(donation.amount), 0),
+        averageDonation: data.length > 0 ? data.reduce((sum, donation) => sum + parseFloat(donation.amount), 0) / data.length : 0,
+        uniqueDonors: [...new Set(data.map(d => d.donor_name))].length,
+        topCauses: getTopCauses(data),
+        monthlyTrend: getMonthlyTrend(data),
+        recentDonations: data.slice(0, 5)
+      };
+
+      return { data: stats, error: null };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
+  },
+
+  getPublicDonations: async (limit = 10) => {
+    try {
+      // Only get public donations (non-anonymous)
+      const { data, error } = await supabase
+        .from('donations')
+        .select('donor_name, amount, cause, created_at, comments')
+        .eq('payment_status', 'completed')
+        .eq('is_anonymous', false)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
+  },
+
+  searchDonations: async (searchTerm, cause = null, dateFrom = null, dateTo = null) => {
+    try {
+      let query = supabase
+        .from('donations')
+        .select('*')
+        .eq('payment_status', 'completed');
+
+      if (searchTerm) {
+        query = query.or(`donor_name.ilike.%${searchTerm}%,donor_email.ilike.%${searchTerm}%,donation_id.ilike.%${searchTerm}%`);
+      }
+
+      if (cause) {
+        query = query.eq('cause', cause);
+      }
+
+      if (dateFrom) {
+        query = query.gte('created_at', dateFrom);
+      }
+
+      if (dateTo) {
+        query = query.lte('created_at', dateTo);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
+  },
+
+  // Newsletter/Mailing List
+  addToMailingList: async (email, name = '', interests = []) => {
+    try {
+      const { data, error } = await supabase
+        .from('mailing_list')
+        .insert([{
+          email,
+          name,
+          interests,
+          subscribed_at: new Date().toISOString(),
+          is_active: true
+        }])
+        .select();
+
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
+  },
+
   // Stats
   getStats: async () => {
     try {
@@ -299,6 +411,19 @@ export const db = {
         .from('stats')
         .select('*')
         .single();
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
+  },
+
+  updateStats: async (updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('stats')
+        .update(updates)
+        .eq('id', 1) // Assuming single stats record
+        .select();
       return { data, error };
     } catch (error) {
       return { data: null, error: error.message };
@@ -340,5 +465,31 @@ export const db = {
     return supabase.auth.onAuthStateChange(callback);
   }
 };
+
+// Helper functions for donation statistics
+function getTopCauses(donations) {
+  const causeCounts = donations.reduce((acc, donation) => {
+    acc[donation.cause] = (acc[donation.cause] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(causeCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5)
+    .map(([cause, count]) => ({ cause, count }));
+}
+
+function getMonthlyTrend(donations) {
+  const monthly = donations.reduce((acc, donation) => {
+    const month = new Date(donation.created_at).toISOString().slice(0, 7);
+    acc[month] = (acc[month] || 0) + parseFloat(donation.amount);
+    return acc;
+  }, {});
+
+  return Object.entries(monthly)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6) // Last 6 months
+    .map(([month, amount]) => ({ month, amount }));
+}
 
 export default supabase;

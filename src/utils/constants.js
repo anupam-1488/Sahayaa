@@ -2,7 +2,8 @@
 import { 
   Heart, Users, Target, Globe, CheckCircle, TrendingUp,
   Activity, Award, Shield, Lightbulb, Link, Sparkles,
-  Building, BookOpen, Home, Utensils, Smile
+  Building, BookOpen, Home, Utensils, Smile,
+  GraduationCap
 } from 'lucide-react';
 
 // Navigation Items - Updated with Members
@@ -210,6 +211,61 @@ export const COMMON_SKILLS = [
   'Strategic Planning'
 ];
 
+export const DONATION_CAUSES = [
+  {
+    id: 'general',
+    title: 'General Fund',
+    description: 'Support our overall mission and help us where the need is greatest',
+    icon: Heart,
+    color: 'green',
+    impact: 'Supports all our programs and initiatives'
+  },
+  {
+    id: 'education',
+    title: 'Education for All',
+    description: 'Help children access quality education and learning resources',
+    icon: GraduationCap,
+    color: 'blue',
+    impact: '₹500 can sponsor a child\'s education for one month'
+  },
+  {
+    id: 'healthcare',
+    title: 'Healthcare & Wellness',
+    description: 'Provide medical care and health awareness programs',
+    icon: Activity,
+    color: 'red',
+    impact: '₹1000 can fund basic medical care for 5 people'
+  },
+  {
+    id: 'community',
+    title: 'Community Development',
+    description: 'Build infrastructure and improve living conditions',
+    icon: Building,
+    color: 'purple',
+    impact: '₹2000 can help improve community facilities'
+  },
+  {
+    id: 'nutrition',
+    title: 'Nutrition Programs',
+    description: 'Fight hunger and malnutrition in our communities',
+    icon: Utensils,
+    color: 'orange',
+    impact: '₹100 can provide nutritious meals for one week'
+  },
+  {
+    id: 'emergency',
+    title: 'Emergency Relief',
+    description: 'Rapid response to disasters and emergency situations',
+    icon: Shield,
+    color: 'yellow',
+    impact: '₹1500 can provide emergency kit for a family'
+  }
+];
+
+// Quick donation amounts
+export const QUICK_DONATION_AMOUNTS = [100, 500, 1000, 2500, 5000, 10000];
+
+
 export default {
   NAVIGATION_ITEMS,
   SAHAYAA_VALUES,
@@ -219,5 +275,8 @@ export default {
   EVENT_CATEGORIES,
   VOLUNTEER_AVAILABILITY,
   ORGANIZATION_ROLES,
-  COMMON_SKILLS
+  COMMON_SKILLS,
+  DONATION_CAUSES,
+  QUICK_DONATION_AMOUNTS
+
 };

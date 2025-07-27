@@ -1,5 +1,5 @@
-// src/components/SahayaaApp.js - Fixed Position Management
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// src/components/SahayaaApp.js - Updated with Policy Pages
+import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db } from '../config/supabase';
 import { DEFAULT_STATS } from '../utils/constants';
 
@@ -13,7 +13,16 @@ import Team from './Pages/Team';
 import Members from './Pages/Members';
 import Events from './Pages/Events';
 import Volunteers from './Pages/Volunteers';
+import Donations from './Pages/Donations';
 import Contact from './Pages/Contact';
+
+// Policy Pages
+import TermsAndConditions from './Pages/TermsAndConditions';
+import PrivacyPolicy from './Pages/PrivacyPolicy';
+import RefundPolicy from './Pages/RefundPolicy';
+
+// Admin Components
+import DonorManagement from './Admin/DonorManagement';
 
 // Auth Components
 import Login from './Auth/Login';
@@ -35,46 +44,57 @@ const SahayaaApp = () => {
   const [testimonials, setTestimonials] = useState([]);
   const [stats, setStats] = useState(DEFAULT_STATS);
 
-  // Loading states - optimized with individual loading states
-  const [dataLoading, setDataLoading] = useState({
-    initial: true,
-    teamMembers: false,
-    organizationMembers: false,
-    events: false,
-    volunteers: false,
-    testimonials: false,
-    stats: false
-  });
+  // Loading states
+  const [dataLoading, setDataLoading] = useState(true);
 
   // Contact form state
   const [showContactForm, setShowContactForm] = useState(false);
 
-  // Data cache to prevent unnecessary re-fetching
-  const [dataCache, setDataCache] = useState({
-    teamMembers: { loaded: false, timestamp: null },
-    organizationMembers: { loaded: false, timestamp: null },
-    events: { loaded: false, timestamp: null },
-    volunteers: { loaded: false, timestamp: null },
-    testimonials: { loaded: false, timestamp: null },
-    stats: { loaded: false, timestamp: null }
-  });
+  // URL routing effect
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/terms-and-conditions') {
+      setActiveSection('terms');
+    } else if (path === '/privacy-policy') {
+      setActiveSection('privacy');
+    } else if (path === '/refund-policy') {
+      setActiveSection('refund');
+    }
+  }, []);
 
-  // Cache timeout (5 minutes)
-  const CACHE_TIMEOUT = 5 * 60 * 1000;
+  // Update URL when section changes
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+    
+    // Update URL without page reload
+    const routes = {
+      'terms': '/terms-and-conditions',
+      'privacy': '/privacy-policy', 
+      'refund': '/refund-policy',
+      'home': '/',
+      'about': '/team',
+      'members': '/members',
+      'events': '/events',
+      'volunteers': '/volunteers',
+      'donations': '/donations',
+      'contact': '/contact'
+    };
+    
+    if (routes[section]) {
+      window.history.pushState({}, '', routes[section]);
+    }
+  };
 
   // Initialize the application
   useEffect(() => {
     initializeApp();
   }, []);
 
-  // Load data when section changes (lazy loading)
-  useEffect(() => {
-    loadSectionData(activeSection);
-  }, [activeSection, user]);
-
   const initializeApp = async () => {
-    await checkAuthState();
-    await loadEssentialData();
+    await Promise.all([
+      checkAuthState(),
+      loadData()
+    ]);
     setAuthLoading(false);
   };
 
@@ -85,6 +105,7 @@ const SahayaaApp = () => {
         setUser(session.user);
       }
 
+      // Listen for auth changes
       const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
         setUser(session?.user || null);
       });
@@ -95,205 +116,59 @@ const SahayaaApp = () => {
     }
   }, []);
 
-  const loadEssentialData = async () => {
-    setDataLoading(prev => ({ ...prev, initial: true }));
-    
+  const loadData = useCallback(async () => {
+    setDataLoading(true);
     try {
-      const [statsResult, recentEventsResult] = await Promise.all([
-        loadStatsIfNeeded(),
-        loadRecentEvents()
+      // Load all data from Supabase
+      const [
+        teamMembersResult, 
+        orgMembersResult, 
+        eventsResult, 
+        volunteersResult, 
+        testimonialsResult, 
+        statsResult
+      ] = await Promise.all([
+        db.getTeamMembers(),
+        db.getOrganizationMembers(),
+        db.getEvents(),
+        db.getVolunteers(),
+        db.getTestimonials(),
+        db.getStats()
       ]);
 
-      if (statsResult) setStats(statsResult);
-      if (recentEventsResult) setEvents(recentEventsResult);
-
-    } catch (error) {
-      console.error('Error loading essential data:', error);
-    } finally {
-      setDataLoading(prev => ({ ...prev, initial: false }));
-    }
-  };
-
-  const loadSectionData = async (section) => {
-    switch (section) {
-      case 'about':
-        await Promise.all([
-          loadTeamMembersIfNeeded(),
-          loadTestimonialsIfNeeded()
-        ]);
-        break;
-      case 'members':
-        await loadOrganizationMembersIfNeeded();
-        break;
-      case 'events':
-        await loadAllEventsIfNeeded();
-        break;
-      case 'volunteers':
-        await loadVolunteersIfNeeded();
-        break;
-      default:
-        break;
-    }
-  };
-
-  const shouldLoadData = (dataType) => {
-    const cache = dataCache[dataType];
-    if (!cache.loaded) return true;
-    if (!cache.timestamp) return true;
-    
-    const now = Date.now();
-    return (now - cache.timestamp) > CACHE_TIMEOUT;
-  };
-
-  const loadTeamMembersIfNeeded = async () => {
-    if (!shouldLoadData('teamMembers')) return;
-    
-    setDataLoading(prev => ({ ...prev, teamMembers: true }));
-    try {
-      const result = await db.getTeamMembers();
-      if (result.data) {
-        setTeamMembers(result.data);
-        setDataCache(prev => ({
-          ...prev,
-          teamMembers: { loaded: true, timestamp: Date.now() }
-        }));
-      }
-      if (result.error) console.error('Error loading team members:', result.error);
-    } catch (error) {
-      console.error('Error loading team members:', error);
-    } finally {
-      setDataLoading(prev => ({ ...prev, teamMembers: false }));
-    }
-  };
-
-  const loadOrganizationMembersIfNeeded = async () => {
-    if (!shouldLoadData('organizationMembers')) return;
-    
-    setDataLoading(prev => ({ ...prev, organizationMembers: true }));
-    try {
-      const result = await db.getOrganizationMembers();
-      if (result.data) {
-        setOrganizationMembers(result.data);
-        setDataCache(prev => ({
-          ...prev,
-          organizationMembers: { loaded: true, timestamp: Date.now() }
-        }));
-      }
-      if (result.error) console.error('Error loading organization members:', result.error);
-    } catch (error) {
-      console.error('Error loading organization members:', error);
-    } finally {
-      setDataLoading(prev => ({ ...prev, organizationMembers: false }));
-    }
-  };
-
-  const loadAllEventsIfNeeded = async () => {
-    if (!shouldLoadData('events')) return;
-    
-    setDataLoading(prev => ({ ...prev, events: true }));
-    try {
-      const result = await db.getEvents();
-      if (result.data) {
-        setEvents(result.data);
-        setDataCache(prev => ({
-          ...prev,
-          events: { loaded: true, timestamp: Date.now() }
-        }));
-      }
-      if (result.error) console.error('Error loading events:', result.error);
-    } catch (error) {
-      console.error('Error loading events:', error);
-    } finally {
-      setDataLoading(prev => ({ ...prev, events: false }));
-    }
-  };
-
-  const loadRecentEvents = async () => {
-    try {
-      const result = await db.getEvents();
-      if (result.data) {
-        return result.data.slice(0, 5);
-      }
-      return [];
-    } catch (error) {
-      console.error('Error loading recent events:', error);
-      return [];
-    }
-  };
-
-  const loadVolunteersIfNeeded = async () => {
-    if (!shouldLoadData('volunteers')) return;
-    
-    setDataLoading(prev => ({ ...prev, volunteers: true }));
-    try {
-      const result = await db.getVolunteers();
-      if (result.data) {
-        setVolunteers(result.data);
-        setDataCache(prev => ({
-          ...prev,
-          volunteers: { loaded: true, timestamp: Date.now() }
-        }));
-      }
-      if (result.error) console.error('Error loading volunteers:', result.error);
-    } catch (error) {
-      console.error('Error loading volunteers:', error);
-    } finally {
-      setDataLoading(prev => ({ ...prev, volunteers: false }));
-    }
-  };
-
-  const loadTestimonialsIfNeeded = async () => {
-    if (!shouldLoadData('testimonials')) return;
-    
-    setDataLoading(prev => ({ ...prev, testimonials: true }));
-    try {
-      const result = await db.getTestimonials();
-      if (result.data) {
-        setTestimonials(result.data);
-        setDataCache(prev => ({
-          ...prev,
-          testimonials: { loaded: true, timestamp: Date.now() }
-        }));
-      }
-      if (result.error) console.error('Error loading testimonials:', result.error);
-    } catch (error) {
-      console.error('Error loading testimonials:', error);
-    } finally {
-      setDataLoading(prev => ({ ...prev, testimonials: false }));
-    }
-  };
-
-  const loadStatsIfNeeded = async () => {
-    if (!shouldLoadData('stats')) return stats;
-    
-    setDataLoading(prev => ({ ...prev, stats: true }));
-    try {
-      const result = await db.getStats();
-      let newStats = DEFAULT_STATS;
+      // Set data with error handling
+      setTeamMembers(teamMembersResult.data || []);
+      setOrganizationMembers(orgMembersResult.data || []);
+      setEvents(eventsResult.data || []);
+      setVolunteers(volunteersResult.data || []);
+      setTestimonials(testimonialsResult.data || []);
       
-      if (result.data) {
-        newStats = {
-          peopleHelped: result.data.people_helped || DEFAULT_STATS.peopleHelped,
-          eventsCompleted: result.data.events_completed || DEFAULT_STATS.eventsCompleted,
-          volunteers: result.data.active_volunteers || DEFAULT_STATS.volunteers,
-          yearsOfService: result.data.years_of_service || DEFAULT_STATS.yearsOfService
-        };
-        
-        setDataCache(prev => ({
-          ...prev,
-          stats: { loaded: true, timestamp: Date.now() }
-        }));
+      // Set stats from database or use defaults
+      if (statsResult.data) {
+        setStats({
+          peopleHelped: statsResult.data.people_helped || DEFAULT_STATS.peopleHelped,
+          eventsCompleted: statsResult.data.events_completed || DEFAULT_STATS.eventsCompleted,
+          volunteers: statsResult.data.active_volunteers || DEFAULT_STATS.volunteers,
+          yearsOfService: statsResult.data.years_of_service || DEFAULT_STATS.yearsOfService
+        });
+      } else {
+        setStats(DEFAULT_STATS);
       }
-      
-      if (result.error) console.error('Error loading stats:', result.error);
-      return newStats;
+
+      // Log any errors
+      if (teamMembersResult.error) console.error('Error loading team members:', teamMembersResult.error);
+      if (orgMembersResult.error) console.error('Error loading org members:', orgMembersResult.error);
+      if (eventsResult.error) console.error('Error loading events:', eventsResult.error);
+      if (volunteersResult.error) console.error('Error loading volunteers:', volunteersResult.error);
+      if (testimonialsResult.error) console.error('Error loading testimonials:', testimonialsResult.error);
+      if (statsResult.error) console.error('Error loading stats:', statsResult.error);
+
     } catch (error) {
-      console.error('Error loading stats:', error);
-      return stats;
+      console.error('Error loading data:', error);
     } finally {
-      setDataLoading(prev => ({ ...prev, stats: false }));
+      setDataLoading(false);
     }
-  };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -302,60 +177,24 @@ const SahayaaApp = () => {
         console.error('Logout error:', error);
       } else {
         setUser(null);
-        setDataCache({
-          teamMembers: { loaded: false, timestamp: null },
-          organizationMembers: { loaded: false, timestamp: null },
-          events: { loaded: false, timestamp: null },
-          volunteers: { loaded: false, timestamp: null },
-          testimonials: { loaded: false, timestamp: null },
-          stats: { loaded: false, timestamp: null }
-        });
+        // Redirect to home if user was on admin page
+        if (activeSection === 'admin-donors') {
+          handleSectionChange('home');
+        }
       }
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  const invalidateCache = (dataType) => {
-    setDataCache(prev => ({
-      ...prev,
-      [dataType]: { loaded: false, timestamp: null }
-    }));
-  };
-
-  // FIXED: Refresh data after position updates
-  const refreshTeamMembers = async () => {
-    try {
-      const result = await db.getTeamMembers();
-      if (result.data) {
-        setTeamMembers(result.data);
-      }
-    } catch (error) {
-      console.error('Error refreshing team members:', error);
-    }
-  };
-
-  const refreshOrganizationMembers = async () => {
-    try {
-      const result = await db.getOrganizationMembers();
-      if (result.data) {
-        setOrganizationMembers(result.data);
-      }
-    } catch (error) {
-      console.error('Error refreshing organization members:', error);
-    }
-  };
-
-  // FIXED: Team member operations with immediate position update
+  // Handle team member operations
   const handleTeamMemberCreate = async (memberData) => {
     try {
       const { data, error } = await db.createTeamMember(memberData);
       if (error) throw error;
       
       if (data && data[0]) {
-        // Immediately refresh all team members to get updated positions
-        await refreshTeamMembers();
-        invalidateCache('teamMembers');
+        setTeamMembers([data[0], ...teamMembers]);
         return { success: true };
       }
     } catch (error) {
@@ -370,9 +209,9 @@ const SahayaaApp = () => {
       if (error) throw error;
       
       if (data && data[0]) {
-        // FIXED: Immediately refresh all team members to get updated positions
-        await refreshTeamMembers();
-        invalidateCache('teamMembers');
+        setTeamMembers(teamMembers.map(member => 
+          member.id === id ? data[0] : member
+        ));
         return { success: true };
       }
     } catch (error) {
@@ -386,9 +225,7 @@ const SahayaaApp = () => {
       const { error } = await db.deleteTeamMember(id);
       if (error) throw error;
       
-      // FIXED: Immediately refresh all team members to get updated positions
-      await refreshTeamMembers();
-      invalidateCache('teamMembers');
+      setTeamMembers(teamMembers.filter(member => member.id !== id));
       return { success: true };
     } catch (error) {
       console.error('Error deleting team member:', error);
@@ -396,16 +233,14 @@ const SahayaaApp = () => {
     }
   };
 
-  // FIXED: Organization member operations with immediate position update
+  // Handle organization member operations
   const handleOrgMemberCreate = async (memberData) => {
     try {
       const { data, error } = await db.createOrganizationMember(memberData);
       if (error) throw error;
       
       if (data && data[0]) {
-        // Immediately refresh all organization members to get updated positions
-        await refreshOrganizationMembers();
-        invalidateCache('organizationMembers');
+        setOrganizationMembers([data[0], ...organizationMembers]);
         return { success: true };
       }
     } catch (error) {
@@ -420,9 +255,9 @@ const SahayaaApp = () => {
       if (error) throw error;
       
       if (data && data[0]) {
-        // FIXED: Immediately refresh all organization members to get updated positions
-        await refreshOrganizationMembers();
-        invalidateCache('organizationMembers');
+        setOrganizationMembers(organizationMembers.map(member => 
+          member.id === id ? data[0] : member
+        ));
         return { success: true };
       }
     } catch (error) {
@@ -436,9 +271,7 @@ const SahayaaApp = () => {
       const { error } = await db.deleteOrganizationMember(id);
       if (error) throw error;
       
-      // FIXED: Immediately refresh all organization members to get updated positions
-      await refreshOrganizationMembers();
-      invalidateCache('organizationMembers');
+      setOrganizationMembers(organizationMembers.filter(member => member.id !== id));
       return { success: true };
     } catch (error) {
       console.error('Error deleting organization member:', error);
@@ -446,15 +279,14 @@ const SahayaaApp = () => {
     }
   };
 
-  // Other CRUD operations (unchanged)
+  // Handle event operations
   const handleEventCreate = async (eventData) => {
     try {
       const { data, error } = await db.createEvent(eventData);
       if (error) throw error;
       
       if (data && data[0]) {
-        setEvents([data[0], ...events]);
-        invalidateCache('events');
+        setEvents([...events, data[0]]);
         return { success: true };
       }
     } catch (error) {
@@ -472,7 +304,6 @@ const SahayaaApp = () => {
         setEvents(events.map(event => 
           event.id === id ? data[0] : event
         ));
-        invalidateCache('events');
         return { success: true };
       }
     } catch (error) {
@@ -487,7 +318,6 @@ const SahayaaApp = () => {
       if (error) throw error;
       
       setEvents(events.filter(event => event.id !== id));
-      invalidateCache('events');
       return { success: true };
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -495,6 +325,7 @@ const SahayaaApp = () => {
     }
   };
 
+  // Handle volunteer operations
   const handleVolunteerCreate = async (volunteerData) => {
     try {
       const { data, error } = await db.createVolunteer(volunteerData);
@@ -502,7 +333,6 @@ const SahayaaApp = () => {
       
       if (data && data[0]) {
         setVolunteers([data[0], ...volunteers]);
-        invalidateCache('volunteers');
         return { success: true };
       }
     } catch (error) {
@@ -520,7 +350,6 @@ const SahayaaApp = () => {
         setVolunteers(volunteers.map(volunteer => 
           volunteer.id === id ? data[0] : volunteer
         ));
-        invalidateCache('volunteers');
         return { success: true };
       }
     } catch (error) {
@@ -535,7 +364,6 @@ const SahayaaApp = () => {
       if (error) throw error;
       
       setVolunteers(volunteers.filter(volunteer => volunteer.id !== id));
-      invalidateCache('volunteers');
       return { success: true };
     } catch (error) {
       console.error('Error deleting volunteer:', error);
@@ -543,6 +371,7 @@ const SahayaaApp = () => {
     }
   };
 
+  // Handle testimonial operations
   const handleTestimonialCreate = async (testimonialData) => {
     try {
       const { data, error } = await db.createTestimonial(testimonialData);
@@ -550,7 +379,6 @@ const SahayaaApp = () => {
       
       if (data && data[0]) {
         setTestimonials([data[0], ...testimonials]);
-        invalidateCache('testimonials');
         return { success: true };
       }
     } catch (error) {
@@ -568,7 +396,6 @@ const SahayaaApp = () => {
         setTestimonials(testimonials.map(testimonial => 
           testimonial.id === id ? data[0] : testimonial
         ));
-        invalidateCache('testimonials');
         return { success: true };
       }
     } catch (error) {
@@ -583,7 +410,6 @@ const SahayaaApp = () => {
       if (error) throw error;
       
       setTestimonials(testimonials.filter(testimonial => testimonial.id !== id));
-      invalidateCache('testimonials');
       return { success: true };
     } catch (error) {
       console.error('Error deleting testimonial:', error);
@@ -591,10 +417,7 @@ const SahayaaApp = () => {
     }
   };
 
-  const isLoading = useMemo(() => {
-    return dataLoading.initial || Object.values(dataLoading).some(loading => loading);
-  }, [dataLoading]);
-
+  // Render loading state
   if (authLoading) {
     return <LoadingScreen />;
   }
@@ -603,20 +426,20 @@ const SahayaaApp = () => {
     <div className="min-h-screen bg-gray-50">
       <Header
         activeSection={activeSection}
-        setActiveSection={setActiveSection}
+        setActiveSection={handleSectionChange}
         user={user}
         setShowLogin={setShowLogin}
         handleLogout={handleLogout}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading && activeSection !== 'home' ? (
+        {dataLoading ? (
           <DataLoadingState />
         ) : (
           <>
             {activeSection === 'home' && (
               <Home
-                setActiveSection={setActiveSection}
+                setActiveSection={handleSectionChange}
                 setShowContactForm={setShowContactForm}
                 stats={stats}
                 testimonials={testimonials}
@@ -673,6 +496,20 @@ const SahayaaApp = () => {
               />
             )}
             
+            {activeSection === 'donations' && (
+              <Donations />
+            )}
+            
+            {/* Policy Pages */}
+            {activeSection === 'terms' && <TermsAndConditions />}
+            {activeSection === 'privacy' && <PrivacyPolicy />}
+            {activeSection === 'refund' && <RefundPolicy />}
+            
+            {/* Admin Donor Management - Only accessible by logged-in users */}
+            {activeSection === 'admin-donors' && (
+              <DonorManagement user={user} />
+            )}
+            
             {activeSection === 'contact' && (
               <Contact />
             )}
@@ -680,14 +517,24 @@ const SahayaaApp = () => {
         )}
       </main>
 
-      <Footer setActiveSection={setActiveSection} />
+      <Footer setActiveSection={handleSectionChange} />
 
+      {/* Admin Panel Quick Access */}
+      {user && (
+        <AdminQuickAccess 
+          activeSection={activeSection}
+          setActiveSection={handleSectionChange}
+        />
+      )}
+
+      {/* Modals */}
       <Login
         showLogin={showLogin}
         setShowLogin={setShowLogin}
         setUser={setUser}
       />
 
+      {/* Contact Form Modal */}
       {showContactForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
@@ -707,7 +554,7 @@ const SahayaaApp = () => {
             <button
               onClick={() => {
                 setShowContactForm(false);
-                setActiveSection('contact');
+                handleSectionChange('contact');
               }}
               className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors"
             >
@@ -719,6 +566,48 @@ const SahayaaApp = () => {
     </div>
   );
 };
+
+const AdminQuickAccess = ({ activeSection, setActiveSection }) => (
+  <div className="fixed bottom-6 right-6 z-40">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4">
+      <h4 className="text-sm font-semibold text-gray-800 mb-3">Admin Panel</h4>
+      <div className="space-y-2">
+        <AdminQuickButton
+          active={activeSection === 'admin-donors'}
+          onClick={() => setActiveSection('admin-donors')}
+          icon="💰"
+          label="Donor Management"
+        />
+        <AdminQuickButton
+          active={activeSection === 'events'}
+          onClick={() => setActiveSection('events')}
+          icon="📅"
+          label="Events"
+        />
+        <AdminQuickButton
+          active={activeSection === 'volunteers'}
+          onClick={() => setActiveSection('volunteers')}
+          icon="🤝"
+          label="Volunteers"
+        />
+      </div>
+    </div>
+  </div>
+);
+
+const AdminQuickButton = ({ active, onClick, icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+      active 
+        ? 'bg-green-100 text-green-800 font-medium' 
+        : 'text-gray-600 hover:bg-gray-100'
+    }`}
+  >
+    <span className="mr-2">{icon}</span>
+    {label}
+  </button>
+);
 
 const LoadingScreen = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">

@@ -1,10 +1,12 @@
-// src/components/Pages/Home.js - Fixed Version
-import React from 'react';
+// src/components/Pages/Home.js - Updated with Donation CTAs
+import React, { useState, useEffect } from 'react';
 import { 
   Target, Activity, Users, Heart, Globe, CheckCircle, TrendingUp, Star, User,
-  Calendar, Clock, MapPin, ArrowRight, Image as ImageIcon, Eye
+  Calendar, Clock, MapPin, ArrowRight, Image as ImageIcon, Eye, IndianRupee,
+  CreditCard, Shield, Award, GraduationCap, Utensils, Home as HomeIcon
 } from 'lucide-react';
 import { SAHAYAA_VALUES, CORE_VALUES, DEFAULT_STATS } from '../../utils/constants';
+import { db } from '../../config/supabase';
 
 const Home = ({ 
   setActiveSection, 
@@ -13,10 +15,44 @@ const Home = ({
   testimonials = [],
   events = []
 }) => {
+  const [donationStats, setDonationStats] = useState(null);
+  const [recentDonations, setRecentDonations] = useState([]);
+
+  useEffect(() => {
+    loadDonationData();
+  }, []);
+
+  const loadDonationData = async () => {
+    try {
+      const [statsResult, publicDonationsResult] = await Promise.all([
+        db.getDonationStats(),
+        db.getPublicDonations(5)
+      ]);
+
+      if (statsResult.data) {
+        setDonationStats(statsResult.data);
+      }
+
+      if (publicDonationsResult.data) {
+        setRecentDonations(publicDonationsResult.data);
+      }
+    } catch (error) {
+      console.error('Error loading donation data:', error);
+    }
+  };
+
   return (
     <div className="space-y-16">
       {/* Hero Section */}
       <HeroSection setActiveSection={setActiveSection} setShowContactForm={setShowContactForm} stats={stats} />
+      
+      {/* Donation Call to Action */}
+      <DonationCTA setActiveSection={setActiveSection} donationStats={donationStats} />
+      
+      {/* Recent Donations Wall */}
+      {recentDonations.length > 0 && (
+        <RecentDonations donations={recentDonations} setActiveSection={setActiveSection} />
+      )}
       
       {/* Upcoming Events Section */}
       <UpcomingEventsSection events={events} setActiveSection={setActiveSection} />
@@ -41,6 +77,176 @@ const Home = ({
     </div>
   );
 };
+
+const DonationCTA = ({ setActiveSection, donationStats }) => (
+  <div className="relative bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 text-white rounded-3xl overflow-hidden">
+    <div className="absolute inset-0 bg-black/10"></div>
+    <div className="relative z-10 p-12">
+      <div className="grid lg:grid-cols-2 gap-12 items-center">
+        {/* Left Content */}
+        <div>
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+              <Heart className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold">Make a Difference Today</h2>
+          </div>
+          
+          <p className="text-xl text-green-100 mb-8 leading-relaxed">
+            Your donation helps us continue our mission of building a compassionate society. 
+            Every contribution, no matter the size, creates ripples of positive change.
+          </p>
+
+          {/* Quick Donation Amounts */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <DonationButton amount={500} impact="Sponsor a child's education for 1 month" setActiveSection={setActiveSection} />
+            <DonationButton amount={1000} impact="Provide medical care for 5 people" setActiveSection={setActiveSection} />
+            <DonationButton amount={2500} impact="Support community development" setActiveSection={setActiveSection} />
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => setActiveSection('donations')}
+              className="bg-white text-green-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold flex items-center space-x-2"
+            >
+              <CreditCard className="w-5 h-5" />
+              <span>Donate Now</span>
+            </button>
+            
+            <div className="flex items-center space-x-4 text-green-100">
+              <div className="flex items-center space-x-1">
+                <Shield className="w-4 h-4" />
+                <span className="text-sm">100% Secure</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Award className="w-4 h-4" />
+                <span className="text-sm">80G Tax Benefit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Stats */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
+          <h3 className="text-xl font-bold mb-6">Our Impact So Far</h3>
+          
+          {donationStats ? (
+            <div className="grid grid-cols-2 gap-6">
+              <ImpactStat
+                icon={IndianRupee}
+                value={`₹${donationStats.totalAmount.toLocaleString('en-IN')}`}
+                label="Total Raised"
+              />
+              <ImpactStat
+                icon={Users}
+                value={donationStats.uniqueDonors}
+                label="Donors"
+              />
+              <ImpactStat
+                icon={Heart}
+                value={donationStats.totalDonations}
+                label="Donations"
+              />
+              <ImpactStat
+                icon={TrendingUp}
+                value={`₹${donationStats.averageDonation.toLocaleString('en-IN')}`}
+                label="Avg Donation"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-6">
+              <ImpactStat icon={IndianRupee} value="₹50L+" label="Target" />
+              <ImpactStat icon={Users} value="1000+" label="Goal" />
+              <ImpactStat icon={Heart} value="2000+" label="Target" />
+              <ImpactStat icon={TrendingUp} value="Growing" label="Impact" />
+            </div>
+          )}
+
+          <div className="mt-6 pt-6 border-t border-white/20">
+            <h4 className="font-semibold mb-3">Popular Causes</h4>
+            <div className="flex flex-wrap gap-2">
+              <CauseBadge icon={GraduationCap} text="Education" />
+              <CauseBadge icon={Activity} text="Healthcare" />
+              <CauseBadge icon={Utensils} text="Nutrition" />
+              <CauseBadge icon={HomeIcon} text="Community" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const DonationButton = ({ amount, impact, setActiveSection }) => (
+  <button
+    onClick={() => setActiveSection('donations')}
+    className="bg-white/20 hover:bg-white/30 p-4 rounded-lg text-center transition-colors group"
+  >
+    <div className="text-2xl font-bold mb-1">₹{amount.toLocaleString()}</div>
+    <div className="text-xs text-green-100 opacity-90 group-hover:opacity-100">{impact}</div>
+  </button>
+);
+
+const ImpactStat = ({ icon: Icon, value, label }) => (
+  <div className="text-center">
+    <Icon className="w-8 h-8 text-white/80 mx-auto mb-2" />
+    <div className="text-2xl font-bold">{value}</div>
+    <div className="text-green-100 text-sm">{label}</div>
+  </div>
+);
+
+const CauseBadge = ({ icon: Icon, text }) => (
+  <div className="flex items-center space-x-1 bg-white/20 px-3 py-1 rounded-full text-sm">
+    <Icon className="w-3 h-3" />
+    <span>{text}</span>
+  </div>
+);
+
+const RecentDonations = ({ donations, setActiveSection }) => (
+  <div className="bg-white p-10 rounded-3xl shadow-xl">
+    <div className="text-center mb-8">
+      <div className="flex items-center justify-center mb-4">
+        <Heart className="w-8 h-8 text-red-500 mr-3" />
+        <h2 className="text-4xl font-bold text-green-800">Recent Donations</h2>
+      </div>
+      <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        Thank you to our amazing donors who are making a difference in our community.
+      </p>
+    </div>
+    
+    <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      {donations.map((donation, index) => (
+        <DonationCard key={index} donation={donation} />
+      ))}
+    </div>
+    
+    <div className="text-center">
+      <button
+        onClick={() => setActiveSection('donations')}
+        className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 mx-auto"
+      >
+        <Heart className="w-5 h-5" />
+        <span>Join Our Donors</span>
+        <ArrowRight className="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+);
+
+const DonationCard = ({ donation }) => (
+  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100 text-center">
+    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+      <User className="w-6 h-6 text-green-600" />
+    </div>
+    <h4 className="font-semibold text-green-800 mb-1 text-sm">{donation.donor_name}</h4>
+    <p className="text-2xl font-bold text-green-600 mb-1">₹{parseFloat(donation.amount).toLocaleString('en-IN')}</p>
+    <p className="text-xs text-green-700 mb-2">{donation.cause}</p>
+    <p className="text-xs text-gray-500">{formatDate(donation.created_at)}</p>
+    {donation.comments && (
+      <p className="text-xs text-gray-600 mt-2 italic line-clamp-2">"{donation.comments}"</p>
+    )}
+  </div>
+);
 
 const UpcomingEventsSection = ({ events, setActiveSection }) => {
   // Filter upcoming events with more flexible criteria
@@ -306,10 +512,13 @@ const HeroSection = ({ setActiveSection, setShowContactForm, stats }) => (
         <ActionButton onClick={() => setActiveSection('about')} primary>
           Meet Our Team
         </ActionButton>
+        <ActionButton onClick={() => setActiveSection('donations')} variant="emerald">
+          Donate Now
+        </ActionButton>
         <ActionButton onClick={() => setActiveSection('events')}>
           Upcoming Events
         </ActionButton>
-        <ActionButton onClick={() => setShowContactForm(true)} variant="emerald">
+        <ActionButton onClick={() => setShowContactForm(true)} variant="blue">
           Get Involved
         </ActionButton>
       </div>
@@ -324,7 +533,8 @@ const ActionButton = ({ children, onClick, primary, variant = 'green' }) => {
     green: primary 
       ? "bg-green-600 text-white hover:bg-green-700" 
       : "border-2 border-green-600 text-green-600 hover:bg-green-50",
-    emerald: "bg-emerald-600 text-white hover:bg-emerald-700"
+    emerald: "bg-emerald-600 text-white hover:bg-emerald-700",
+    blue: "bg-blue-600 text-white hover:bg-blue-700"
   };
   
   return (
