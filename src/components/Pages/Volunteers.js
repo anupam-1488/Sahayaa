@@ -1,13 +1,14 @@
-// src/components/Pages/Volunteers.js - Privacy Protected Version
+// src/components/Pages/Volunteers.js - Complete Updated File with Simple Share Card
 import React, { useState } from 'react';
 import { 
   Users, Plus, Edit3, Trash2, User, Mail, Phone, Calendar, 
   Award, Clock, Download, Search, Filter, MapPin, Briefcase,
-  Shield, Eye, EyeOff
+  Shield, Eye, EyeOff, Share2
 } from 'lucide-react';
 import VolunteerForm from '../Forms/VolunteerForm';
 import VolunteerPortal from '../UI/VolunteerPortal';
 import CertificateGenerator from '../UI/CertificateGenerator';
+import VolunteerShareCard from '../UI/VolunteerShareCard';
 
 const Volunteers = ({ 
   volunteers = [], 
@@ -21,7 +22,9 @@ const Volunteers = ({
   const [editingVolunteer, setEditingVolunteer] = useState(null);
   const [showVolunteerPortal, setShowVolunteerPortal] = useState(false);
   const [showCertificateGenerator, setShowCertificateGenerator] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState(null);
+  const [selectedVolunteerForShare, setSelectedVolunteerForShare] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSkill, setFilterSkill] = useState('');
   const [filterAvailability, setFilterAvailability] = useState('');
@@ -34,7 +37,6 @@ const Volunteers = ({
           alert('Failed to delete volunteer: ' + result.error);
         }
       } else {
-        // Fallback to local state
         setVolunteers(volunteers.filter(volunteer => volunteer.id !== id));
       }
     }
@@ -50,6 +52,11 @@ const Volunteers = ({
     setShowCertificateGenerator(true);
   };
 
+  const generateShareCard = (volunteer) => {
+    setSelectedVolunteerForShare(volunteer);
+    setShowShareCard(true);
+  };
+
   const openVolunteerPortal = () => {
     setShowVolunteerPortal(true);
   };
@@ -60,7 +67,6 @@ const Volunteers = ({
   // Filter volunteers based on search and filters
   const filteredVolunteers = volunteers.filter(volunteer => {
     if (!user) {
-      // For non-admin users, only show basic public info
       return true;
     }
     
@@ -77,12 +83,6 @@ const Volunteers = ({
   return (
     <div className="space-y-12">
       <PageHeader />
-      
-      {/* Volunteer Portal Access */}
-      {/* <VolunteerPortalAccess onOpenPortal={openVolunteerPortal} /> */}
-      
-      {/* Privacy Notice for non-admin users */}
-      {/* {!user && <PrivacyNotice />} */}
       
       {user && <AdminSection setShowVolunteerForm={setShowVolunteerForm} />}
       
@@ -108,6 +108,7 @@ const Volunteers = ({
         onEdit={startEditVolunteer}
         onDelete={handleDeleteVolunteer}
         onGenerateCertificate={generateCertificate}
+        onGenerateShareCard={generateShareCard}
       />
 
       {/* Forms and Modals */}
@@ -135,6 +136,13 @@ const Volunteers = ({
           onClose={() => setShowCertificateGenerator(false)}
         />
       )}
+
+      {showShareCard && selectedVolunteerForShare && (
+        <VolunteerShareCard
+          volunteer={selectedVolunteerForShare}
+          onClose={() => setShowShareCard(false)}
+        />
+      )}
     </div>
   );
 };
@@ -148,43 +156,6 @@ const PageHeader = () => (
     </p>
   </div>
 );
-
-// const PrivacyNotice = () => (
-//   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-//     <div className="flex items-start space-x-3">
-//       <Shield className="w-6 h-6 text-blue-600 mt-1" />
-//       <div>
-//         <h3 className="text-lg font-semibold text-blue-800 mb-2">Privacy Protected</h3>
-//         <p className="text-blue-700 text-sm leading-relaxed">
-//           To protect our volunteers' privacy, personal contact information is not publicly displayed. 
-//           Volunteers can access their personal portal using the button above. For any volunteer-related 
-//           inquiries, please contact our organization directly.
-//         </p>
-//       </div>
-//     </div>
-//   </div>
-// );
-
-// const VolunteerPortalAccess = ({ onOpenPortal }) => (
-//   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-8">
-//     <div className="text-center">
-//       <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-//         <User className="w-8 h-8 text-white" />
-//       </div>
-//       <h3 className="text-2xl font-bold text-blue-800 mb-4">Volunteer Portal</h3>
-//       <p className="text-blue-600 mb-6 max-w-2xl mx-auto">
-//         Are you a volunteer with Sahayaa Trust? Access your personal portal to view your 
-//         participation history, download certificates, and track your volunteer journey.
-//       </p>
-//       <button
-//         onClick={onOpenPortal}
-//         className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-//       >
-//         Access Volunteer Portal
-//       </button>
-//     </div>
-//   </div>
-// );
 
 const AdminSection = ({ setShowVolunteerForm }) => (
   <div className="flex justify-center">
@@ -323,7 +294,7 @@ const StatCard = ({ icon: Icon, value, label, color }) => {
   );
 };
 
-const VolunteerList = ({ volunteers, user, onEdit, onDelete, onGenerateCertificate }) => {
+const VolunteerList = ({ volunteers, user, onEdit, onDelete, onGenerateCertificate, onGenerateShareCard }) => {
   if (volunteers.length === 0) {
     return <EmptyState />;
   }
@@ -351,6 +322,7 @@ const VolunteerList = ({ volunteers, user, onEdit, onDelete, onGenerateCertifica
             onEdit={onEdit}
             onDelete={onDelete}
             onGenerateCertificate={onGenerateCertificate}
+            onGenerateShareCard={onGenerateShareCard}
           />
         ))}
       </div>
@@ -369,7 +341,7 @@ const EmptyState = () => (
   </div>
 );
 
-const VolunteerCard = ({ volunteer, user, onEdit, onDelete, onGenerateCertificate }) => (
+const VolunteerCard = ({ volunteer, user, onEdit, onDelete, onGenerateCertificate, onGenerateShareCard }) => (
   <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
     <VolunteerImage volunteer={volunteer} user={user} />
     <VolunteerContent 
@@ -378,6 +350,7 @@ const VolunteerCard = ({ volunteer, user, onEdit, onDelete, onGenerateCertificat
       onEdit={onEdit} 
       onDelete={onDelete}
       onGenerateCertificate={onGenerateCertificate}
+      onGenerateShareCard={onGenerateShareCard}
     />
   </div>
 );
@@ -416,7 +389,7 @@ const VolunteerImage = ({ volunteer, user }) => (
   </div>
 );
 
-const VolunteerContent = ({ volunteer, user, onEdit, onDelete, onGenerateCertificate }) => (
+const VolunteerContent = ({ volunteer, user, onEdit, onDelete, onGenerateCertificate, onGenerateShareCard }) => (
   <div className="p-6">
     <div className="flex justify-between items-start mb-4">
       <div>
@@ -431,9 +404,9 @@ const VolunteerContent = ({ volunteer, user, onEdit, onDelete, onGenerateCertifi
     <SkillsList skills={volunteer.skills} />
     
     {user ? (
-      <AdminVolunteerActions volunteer={volunteer} onGenerateCertificate={onGenerateCertificate} />
+      <AdminVolunteerActions volunteer={volunteer} onGenerateCertificate={onGenerateCertificate} onGenerateShareCard={onGenerateShareCard} />
     ) : (
-      <PublicVolunteerActions />
+      <PublicVolunteerActions volunteer={volunteer} onGenerateShareCard={onGenerateShareCard} />
     )}
   </div>
 );
@@ -474,6 +447,13 @@ const VolunteerInfo = ({ volunteer, user }) => (
       </div>
     )}
     
+    {volunteer.availability && (
+      <div className="flex items-center space-x-2">
+        <Calendar className="w-4 h-4" />
+        <span>Available: {volunteer.availability}</span>
+      </div>
+    )}
+    
     {user ? (
       <>
         <div className="flex items-center space-x-2">
@@ -486,10 +466,6 @@ const VolunteerInfo = ({ volunteer, user }) => (
             <span>{volunteer.phone}</span>
           </div>
         )}
-        <div className="flex items-center space-x-2">
-          <Calendar className="w-4 h-4" />
-          <span>Available: {volunteer.availability}</span>
-        </div>
       </>
     ) : (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -537,15 +513,25 @@ const SkillsList = ({ skills }) => {
   );
 };
 
-const AdminVolunteerActions = ({ volunteer, onGenerateCertificate }) => (
+const AdminVolunteerActions = ({ volunteer, onGenerateCertificate, onGenerateShareCard }) => (
   <div className="space-y-2">
-    <button
-      onClick={() => onGenerateCertificate(volunteer)}
-      className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm"
-    >
-      <Download className="w-4 h-4" />
-      <span>Generate Certificate (Admin)</span>
-    </button>
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        onClick={() => onGenerateCertificate(volunteer)}
+        className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 text-sm"
+      >
+        <Download className="w-3 h-3" />
+        <span>Certificate</span>
+      </button>
+      
+      <button
+        onClick={() => onGenerateShareCard(volunteer)}
+        className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1 text-sm"
+      >
+        <Share2 className="w-3 h-3" />
+        <span>Share Card</span>
+      </button>
+    </div>
     
     {volunteer.bio && (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -557,17 +543,26 @@ const AdminVolunteerActions = ({ volunteer, onGenerateCertificate }) => (
   </div>
 );
 
-const PublicVolunteerActions = () => (
+const PublicVolunteerActions = ({ volunteer, onGenerateShareCard }) => (
   <div className="space-y-2">
-    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-      <div className="flex items-center space-x-2">
-        <Award className="w-4 h-4 text-green-600" />
-        <span className="text-green-700 text-sm font-medium">Active Community Volunteer</span>
+    {/* Share Card Button - Available to everyone */}
+    <button
+      onClick={() => onGenerateShareCard(volunteer)}
+      className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm"
+    >
+      <Share2 className="w-4 h-4" />
+      <span>Share Volunteer Card</span>
+    </button>
+    
+    {/* Show full bio to ALL users */}
+    {volunteer.bio && (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-blue-800 mb-2">About</h4>
+        <p className="text-sm text-blue-700 leading-relaxed">
+          {volunteer.bio}
+        </p>
       </div>
-      <p className="text-green-600 text-xs mt-1">
-        Contributing to positive community change through dedicated service
-      </p>
-    </div>
+    )}
   </div>
 );
 

@@ -1,9 +1,9 @@
-// src/components/Pages/Donations.js
+// src/components/Pages/Donations.js - Updated for Instamojo
 import React, { useState } from 'react';
 import { 
   Heart, IndianRupee, Users, GraduationCap, Activity, 
   Home, Utensils, Shield, Award, CreditCard, Lock,
-  CheckCircle, Download, Mail, Phone
+  CheckCircle, Download, Mail, Phone, ExternalLink
 } from 'lucide-react';
 import DonationForm from '../Forms/DonationForm';
 
@@ -140,6 +140,7 @@ const DonationHero = () => (
         <DonationFeature icon={Lock} text="100% Secure" />
         <DonationFeature icon={Award} text="80G Tax Exemption" />
         <DonationFeature icon={Heart} text="Trusted by 5000+" />
+        <DonationFeature icon={ExternalLink} text="Powered by Instamojo" />
       </div>
     </div>
   </div>
@@ -353,11 +354,15 @@ const DonationCard = ({
       <span>Donate Securely</span>
     </button>
 
-    {/* Security Info */}
+    {/* Payment Info */}
     <div className="mt-4 text-center">
-      <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+      <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mb-2">
         <Lock className="w-4 h-4" />
-        <span>Secured by Razorpay</span>
+        <span>Secured by Instamojo</span>
+      </div>
+      <div className="flex items-center justify-center space-x-2 text-xs text-gray-400">
+        <ExternalLink className="w-3 h-3" />
+        <span>You'll be redirected to complete payment</span>
       </div>
       <p className="text-xs text-gray-400 mt-1">
         Your payment information is encrypted and secure

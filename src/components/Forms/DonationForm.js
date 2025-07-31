@@ -1,15 +1,15 @@
-// src/components/Forms/DonationForm.js
+// src/components/Forms/DonationForm.js - Updated for Instamojo Integration
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, User, Mail, Phone, MapPin, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, CreditCard, User, Mail, Phone, MapPin, Download, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
 import Modal from '../UI/Modal';
-import { donationAPI } from '../../services/api'; // ✅ Correct import path
-
+import { donationAPI } from '../../services/api';
 
 const DonationForm = ({ show, onClose, amount, cause }) => {
-  const [step, setStep] = useState(1); // 1: Details, 2: Payment, 3: Success
+  const [step, setStep] = useState(1); // 1: Details, 2: Processing, 3: Success
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [donationId, setDonationId] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -18,25 +18,30 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
     address: '',
     city: '',
     pincode: '',
-    panNumber: '', // For tax exemption
-    amount: amount,
+    panNumber: '',
+    amount: amount || '',
     cause: cause?.id || 'general',
     isAnonymous: false,
     wantReceipt: true,
     comments: ''
   });
 
+  // Check if we're returning from payment
   useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
+    if (show && donationAPI.isPaymentSuccessPage()) {
+      const paymentData = donationAPI.parsePaymentResponse();
+      if (paymentData.payment_id) {
+        handlePaymentReturn(paymentData);
+      }
+    }
+  }, [show]);
 
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  // Update amount when prop changes
+  useEffect(() => {
+    if (amount) {
+      setFormData(prev => ({ ...prev, amount: amount }));
+    }
+  }, [amount]);
 
   const validateForm = () => {
     const errors = {};
@@ -48,7 +53,7 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
     if (!formData.address.trim()) errors.address = 'Address is required';
     if (!formData.city.trim()) errors.city = 'City is required';
     if (!formData.pincode.trim()) errors.pincode = 'Pincode is required';
-    if (formData.amount < 10) errors.amount = 'Minimum donation is ₹10';
+    if (!formData.amount || formData.amount < 10) errors.amount = 'Minimum donation is ₹10';
     
     // PAN validation for tax exemption
     if (formData.wantReceipt && formData.amount >= 2000 && !formData.panNumber.trim()) {
@@ -56,7 +61,7 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
     }
     
     if (formData.panNumber && !isValidPAN(formData.panNumber)) {
-      errors.panNumber = 'Invalid PAN format';
+      errors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     }
 
     return errors;
@@ -82,88 +87,109 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
     setError('');
     setStep(2);
     
-    // Initiate Razorpay payment
-    initiatePayment();
+    // Initiate payment
+    await initiatePayment();
   };
 
   const initiatePayment = async () => {
     setLoading(true);
     
     try {
-      // Create order on your backend (you'll need to implement this API)
-      const orderResponse = await createRazorpayOrder(formData);
+      console.log('🚀 Initiating Instamojo payment for:', formData);
+
+      // Test backend connection first
+      const testResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001'}/api/test`);
+      if (!testResponse.ok) {
+        throw new Error('Backend server not responding. Please ensure the server is running.');
+      }
       
-      if (!orderResponse.success) {
-        throw new Error(orderResponse.error || 'Failed to create payment order');
+      const testData = await testResponse.json();
+      console.log('🔗 Backend connection test:', testData);
+
+      // Create payment request on backend
+      const paymentResponse = await donationAPI.createPaymentRequest({
+        amount: parseFloat(formData.amount),
+        donorDetails: formData
+      });
+      
+      console.log('📦 Payment request response:', paymentResponse);
+
+      if (!paymentResponse.success) {
+        throw new Error(paymentResponse.error || 'Failed to create payment request');
       }
 
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID, // Your Razorpay Key ID
-        amount: formData.amount * 100, // Amount in paise
-        currency: 'INR',
-        name: 'Sahayaa Trust',
-        description: `Donation for ${cause?.title || 'General Fund'}`,
-        image: '/logo.jpg', // Your logo
-        order_id: orderResponse.orderId,
-        handler: function (response) {
-          handlePaymentSuccess(response);
-        },
-        prefill: {
-          name: formData.name,
-          email: formData.email,
-          contact: formData.phone,
-        },
-        notes: {
-          cause: formData.cause,
-          comments: formData.comments,
-          donorCity: formData.city
-        },
-        theme: {
-          color: '#16a34a', // Green theme matching your site
-        },
-        modal: {
-          ondismiss: function() {
-            setLoading(false);
-            setStep(1);
-          }
-        }
-      };
+      // Store payment URL and donation ID
+      setPaymentUrl(paymentResponse.longUrl);
+      setDonationId(paymentResponse.donationId);
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      // Store form data in localStorage for after payment return
+      localStorage.setItem('sahayaa_donation_form', JSON.stringify(formData));
+      localStorage.setItem('sahayaa_donation_id', paymentResponse.donationId);
+
+      console.log('✅ Payment request created, redirecting to Instamojo...');
       
     } catch (error) {
-      console.error('Payment initiation error:', error);
-      setError(error.message);
+      console.error('❌ Payment initiation error:', error);
+      setError(`Payment setup failed: ${error.message}`);
       setLoading(false);
       setStep(1);
     }
   };
 
-  const handlePaymentSuccess = async (paymentResponse) => {
+  const redirectToPayment = () => {
+    if (paymentUrl) {
+      console.log('🔄 Redirecting to Instamojo payment page...');
+      window.location.href = paymentUrl;
+    }
+  };
+
+  const handlePaymentReturn = async (paymentData) => {
     setLoading(true);
+    setStep(2);
     
     try {
-      // Verify payment on your backend
-      const verificationResponse = await verifyPayment({
-        ...paymentResponse,
-        donorDetails: formData
+      console.log('🔍 Processing payment return:', paymentData);
+
+      // Get stored form data
+      const storedFormData = localStorage.getItem('sahayaa_donation_form');
+      const storedDonationId = localStorage.getItem('sahayaa_donation_id');
+      
+      if (storedFormData) {
+        setFormData(JSON.parse(storedFormData));
+      }
+      
+      if (storedDonationId) {
+        setDonationId(storedDonationId);
+      }
+
+      // Verify payment with backend
+      const verificationResponse = await donationAPI.verifyPayment({
+        payment_id: paymentData.payment_id,
+        payment_request_id: paymentData.payment_request_id,
+        donorDetails: JSON.parse(storedFormData || '{}')
       });
       
+      console.log('✅ Verification response:', verificationResponse);
+
       if (verificationResponse.success) {
         setDonationId(verificationResponse.donationId);
         setStep(3);
+        setError('');
         
-        // Send confirmation email (implement this API)
-        await sendDonationConfirmation(verificationResponse.donationId);
+        // Clear stored data
+        localStorage.removeItem('sahayaa_donation_form');
+        localStorage.removeItem('sahayaa_donation_id');
+        
+        console.log('📧 Payment verified, donation ID:', verificationResponse.donationId);
         
       } else {
-        throw new Error('Payment verification failed');
+        throw new Error(verificationResponse.error || 'Payment verification failed');
       }
       
     } catch (error) {
-      console.error('Payment verification error:', error);
-      setError('Payment was processed but verification failed. Please contact support.');
+      console.error('❌ Payment verification error:', error);
+      setError(`Payment verification failed: ${error.message}. Please contact support with payment ID: ${paymentData.payment_id}`);
+      setStep(1);
     } finally {
       setLoading(false);
     }
@@ -171,11 +197,10 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
 
   const downloadReceipt = async () => {
     try {
-      // Implement receipt download API
-      const response = await fetch(`/api/donations/${donationId}/receipt`);
-      const blob = await response.blob();
+      setLoading(true);
+      const response = await donationAPI.getReceipt(donationId);
       
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(response);
       const link = document.createElement('a');
       link.href = url;
       link.download = `sahayaa-donation-receipt-${donationId}.pdf`;
@@ -183,8 +208,10 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
       
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Receipt download error:', error);
-      alert('Failed to download receipt. Please contact support.');
+      console.error('❌ Receipt download error:', error);
+      alert('Receipt download is not yet available. You will receive it via email.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -192,6 +219,8 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
     setStep(1);
     setError('');
     setDonationId('');
+    setPaymentUrl('');
+    setLoading(false);
     onClose();
   };
 
@@ -210,6 +239,7 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
+            disabled={loading && step === 2}
           >
             <X className="w-6 h-6" />
           </button>
@@ -239,6 +269,19 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
           ))}
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+              <div>
+                <h4 className="text-red-800 font-medium">Payment Error</h4>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Donation Details */}
         {step === 1 && (
           <DonorDetailsForm 
@@ -246,14 +289,17 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
             setFormData={setFormData}
             onSubmit={handleSubmit}
             loading={loading}
-            error={error}
             cause={cause}
           />
         )}
 
         {/* Step 2: Payment Processing */}
         {step === 2 && (
-          <PaymentProcessing loading={loading} />
+          <PaymentProcessing 
+            loading={loading}
+            paymentUrl={paymentUrl}
+            redirectToPayment={redirectToPayment}
+          />
         )}
 
         {/* Step 3: Success */}
@@ -263,6 +309,7 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
             donationId={donationId}
             onDownloadReceipt={downloadReceipt}
             onClose={handleClose}
+            loading={loading}
           />
         )}
       </div>
@@ -270,29 +317,31 @@ const DonationForm = ({ show, onClose, amount, cause }) => {
   );
 };
 
-const DonorDetailsForm = ({ formData, setFormData, onSubmit, loading, error, cause }) => (
+const DonorDetailsForm = ({ formData, setFormData, onSubmit, loading, cause }) => (
   <form onSubmit={onSubmit} className="space-y-6">
     {/* Donation Summary */}
     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
       <h4 className="font-semibold text-green-800 mb-2">Donation Summary</h4>
       <div className="flex justify-between items-center">
         <span className="text-green-700">
-          {cause?.title || 'General Fund'} - ₹{formData.amount.toLocaleString()}
+          {cause?.title || 'General Fund'} - ₹{formData.amount ? parseFloat(formData.amount).toLocaleString() : '0'}
         </span>
         <span className="text-green-600 text-sm">
-          Tax benefit: ₹{Math.floor(formData.amount * 0.5).toLocaleString()}
+          Tax benefit: ₹{formData.amount ? Math.floor(formData.amount * 0.5).toLocaleString() : '0'}
         </span>
       </div>
     </div>
 
-    {error && (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-        <div className="flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 text-red-500" />
-          <p className="text-red-600 text-sm">{error}</p>
-        </div>
+    {/* Payment Method Info */}
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="flex items-center space-x-2">
+        <ExternalLink className="w-5 h-5 text-blue-600" />
+        <span className="text-blue-800 font-medium">Payment via Instamojo</span>
       </div>
-    )}
+      <p className="text-blue-700 text-sm mt-1">
+        You will be redirected to Instamojo's secure payment page to complete your donation.
+      </p>
+    </div>
 
     {/* Personal Details */}
     <div className="grid md:grid-cols-2 gap-4">
@@ -367,6 +416,18 @@ const DonorDetailsForm = ({ formData, setFormData, onSubmit, loading, error, cau
       />
     </div>
 
+    {/* Donation Amount */}
+    <FormField
+      label="Donation Amount (₹)"
+      type="number"
+      value={formData.amount}
+      onChange={(value) => setFormData({...formData, amount: value})}
+      placeholder="100"
+      required
+      min="10"
+      helpText="Minimum donation: ₹10"
+    />
+
     {/* Preferences */}
     <div className="space-y-4">
       <CheckboxField
@@ -414,34 +475,47 @@ const DonorDetailsForm = ({ formData, setFormData, onSubmit, loading, error, cau
   </form>
 );
 
-const PaymentProcessing = ({ loading }) => (
+const PaymentProcessing = ({ loading, paymentUrl, redirectToPayment }) => (
   <div className="text-center py-12">
     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
       {loading ? (
         <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
       ) : (
-        <CreditCard className="w-10 h-10 text-green-600" />
+        <ExternalLink className="w-10 h-10 text-green-600" />
       )}
     </div>
+    
     <h3 className="text-xl font-bold text-gray-800 mb-4">
-      {loading ? 'Processing Payment...' : 'Complete Payment'}
+      {loading ? 'Setting up Payment...' : 'Ready to Proceed'}
     </h3>
+    
     <p className="text-gray-600 mb-6">
       {loading 
-        ? 'Please wait while we process your payment securely through Razorpay.'
-        : 'You will be redirected to Razorpay to complete your donation.'
+        ? 'Please wait while we prepare your secure payment with Instamojo.'
+        : 'Click the button below to complete your donation on Instamojo\'s secure payment page.'
       }
     </p>
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    
+    {paymentUrl && !loading && (
+      <button
+        onClick={redirectToPayment}
+        className="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 mx-auto font-semibold text-lg"
+      >
+        <ExternalLink className="w-5 h-5" />
+        <span>Continue to Payment</span>
+      </button>
+    )}
+    
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
       <p className="text-blue-700 text-sm">
-        🔒 Your payment is secured by industry-standard encryption. 
-        We do not store your payment information.
+        🔒 Your payment is secured by Instamojo with industry-standard encryption. 
+        You will be redirected back here after completing the payment.
       </p>
     </div>
   </div>
 );
 
-const DonationSuccess = ({ formData, donationId, onDownloadReceipt, onClose }) => (
+const DonationSuccess = ({ formData, donationId, onDownloadReceipt, onClose, loading }) => (
   <div className="text-center py-8">
     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
       <CheckCircle className="w-12 h-12 text-green-600" />
@@ -456,10 +530,10 @@ const DonationSuccess = ({ formData, donationId, onDownloadReceipt, onClose }) =
         Donation ID: {donationId}
       </p>
       <p className="text-green-700">
-        Amount: ₹{formData.amount.toLocaleString()} for {formData.cause}
+        Amount: ₹{formData.amount ? parseFloat(formData.amount).toLocaleString() : '0'} for {formData.cause}
       </p>
       <p className="text-green-600 text-sm mt-2">
-        Tax Benefit: ₹{Math.floor(formData.amount * 0.5).toLocaleString()} (approx.)
+        Tax Benefit: ₹{formData.amount ? Math.floor(formData.amount * 0.5).toLocaleString() : '0'} (approx.)
       </p>
     </div>
 
@@ -472,10 +546,15 @@ const DonationSuccess = ({ formData, donationId, onDownloadReceipt, onClose }) =
       {formData.wantReceipt && (
         <button
           onClick={onDownloadReceipt}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+          disabled={loading}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto disabled:opacity-50"
         >
-          <Download className="w-5 h-5" />
-          <span>Download 80G Receipt</span>
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <Download className="w-5 h-5" />
+          )}
+          <span>{loading ? 'Generating...' : 'Download Receipt'}</span>
         </button>
       )}
     </div>
@@ -509,7 +588,7 @@ const DonationSuccess = ({ formData, donationId, onDownloadReceipt, onClose }) =
 
 const FormField = ({ 
   label, type, value, onChange, placeholder, error, required, 
-  helpText, icon: Icon, rows = 3 
+  helpText, icon: Icon, rows = 3, min 
 }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -538,6 +617,7 @@ const FormField = ({
             Icon ? 'pl-10' : ''
           } ${error ? 'border-red-300' : 'border-gray-300'}`}
           placeholder={placeholder}
+          min={min}
         />
       )}
     </div>
@@ -568,36 +648,5 @@ const CheckboxField = ({ label, checked, onChange, helpText }) => (
     )}
   </div>
 );
-
-// Mock API functions - Replace with actual API calls
-const createRazorpayOrder = async (donationData) => {
-  try {
-    const response = await donationAPI.createOrder({
-      amount: donationData.amount,
-      currency: 'INR',
-      donorDetails: donationData
-    });
-    return response;
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
-  }
-};
-
-const verifyPayment = async (paymentData) => {
-  try {
-    const response = await donationAPI.verifyPayment(paymentData);
-    return response;
-  } catch (error) {
-    console.error('Verification Error:', error);
-    throw error;
-  }
-};
-
-
-const sendDonationConfirmation = async (donationId) => {
-  // Send confirmation email
-  console.log('Sending confirmation for:', donationId);
-};
 
 export default DonationForm;
