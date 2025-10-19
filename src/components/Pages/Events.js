@@ -493,9 +493,42 @@ const DetailItem = ({ icon: Icon, text }) => (
   </div>
 );
 
-const EventDescription = ({ event }) => (
-  <p className="text-gray-700 text-sm leading-relaxed mb-6 line-clamp-3">{event.description}</p>
-);
+const EventDescription = ({ event }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  if (!event.description) return null;
+  
+  // Check if description is long enough to need truncation
+  const isLongDescription = event.description.length > 150;
+  
+  return (
+    <div className="mb-6">
+      <p className={`text-gray-700 text-sm leading-relaxed ${
+        isExpanded ? '' : 'line-clamp-3'
+      }`}>
+        {event.description}
+      </p>
+      
+      {isLongDescription && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-2 text-green-600 hover:text-green-700 text-sm font-medium flex items-center space-x-1 transition-colors"
+        >
+          <span>{isExpanded ? 'Read Less' : 'Read More'}</span>
+          <svg 
+            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+};
+
 
 const EventFooter = ({ event }) => (
   <div className="flex items-center justify-between pt-4 border-t border-gray-100 mb-4">

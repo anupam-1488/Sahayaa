@@ -113,18 +113,15 @@ export const CORE_VALUES = [
 // Contact Information
 export const CONTACT_INFO = {
   address: {
-    line1: 'Sahayaa Trust Office',
-    line2: 'Community Service Center',
-    line3: 'Hyderabad, Telangana, India'
+      line1: "14-40-52 Flat No: 302",
+      line2: "Morrispet Tenali, 522201",
+      
   },
   emails: [
-    'info@sahayaa.org',
-    'contact@sahayaa.org',
-    'volunteers@sahayaa.org'
+   ["sahayaatrust@gmail.com"]
   ],
   phones: [
-    '+91 98765 43210',
-    '+91 87654 32109'
+    ["+91 91216 55131"]
   ],
   socialMedia: {
     facebook: 'https://facebook.com/sahayaatrust',
