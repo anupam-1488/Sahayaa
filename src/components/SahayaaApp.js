@@ -1,4 +1,4 @@
-// src/components/SahayaaApp.js - Updated with Policy Pages
+// src/components/SahayaaApp.js - Without Admin Panel
 import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db } from '../config/supabase';
 import { DEFAULT_STATS } from '../utils/constants';
@@ -20,9 +20,6 @@ import Contact from './Pages/Contact';
 import TermsAndConditions from './Pages/TermsAndConditions';
 import PrivacyPolicy from './Pages/PrivacyPolicy';
 import RefundPolicy from './Pages/RefundPolicy';
-
-// Admin Components
-import DonorManagement from './Admin/DonorManagement';
 
 // Auth Components
 import Login from './Auth/Login';
@@ -177,10 +174,8 @@ const SahayaaApp = () => {
         console.error('Logout error:', error);
       } else {
         setUser(null);
-        // Redirect to home if user was on admin page
-        if (activeSection === 'admin-donors') {
-          handleSectionChange('home');
-        }
+        // Redirect to home
+        handleSectionChange('home');
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -505,11 +500,6 @@ const SahayaaApp = () => {
             {activeSection === 'privacy' && <PrivacyPolicy />}
             {activeSection === 'refund' && <RefundPolicy />}
             
-            {/* Admin Donor Management - Only accessible by logged-in users */}
-            {activeSection === 'admin-donors' && (
-              <DonorManagement user={user} />
-            )}
-            
             {activeSection === 'contact' && (
               <Contact />
             )}
@@ -518,14 +508,6 @@ const SahayaaApp = () => {
       </main>
 
       <Footer setActiveSection={handleSectionChange} />
-
-      {/* Admin Panel Quick Access */}
-      {user && (
-        <AdminQuickAccess 
-          activeSection={activeSection}
-          setActiveSection={handleSectionChange}
-        />
-      )}
 
       {/* Modals */}
       <Login
@@ -566,48 +548,6 @@ const SahayaaApp = () => {
     </div>
   );
 };
-
-const AdminQuickAccess = ({ activeSection, setActiveSection }) => (
-  <div className="fixed bottom-6 right-6 z-40">
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4">
-      <h4 className="text-sm font-semibold text-gray-800 mb-3">Admin Panel</h4>
-      <div className="space-y-2">
-        <AdminQuickButton
-          active={activeSection === 'admin-donors'}
-          onClick={() => setActiveSection('admin-donors')}
-          icon="💰"
-          label="Donor Management"
-        />
-        <AdminQuickButton
-          active={activeSection === 'events'}
-          onClick={() => setActiveSection('events')}
-          icon="📅"
-          label="Events"
-        />
-        <AdminQuickButton
-          active={activeSection === 'volunteers'}
-          onClick={() => setActiveSection('volunteers')}
-          icon="🤝"
-          label="Volunteers"
-        />
-      </div>
-    </div>
-  </div>
-);
-
-const AdminQuickButton = ({ active, onClick, icon, label }) => (
-  <button
-    onClick={onClick}
-    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-      active 
-        ? 'bg-green-100 text-green-800 font-medium' 
-        : 'text-gray-600 hover:bg-gray-100'
-    }`}
-  >
-    <span className="mr-2">{icon}</span>
-    {label}
-  </button>
-);
 
 const LoadingScreen = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">

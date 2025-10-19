@@ -329,6 +329,7 @@ export const db = {
         topCauses: getTopCauses(data),
         monthlyTrend: getMonthlyTrend(data),
         recentDonations: data.slice(0, 5)
+        
       };
 
       return { data: stats, error: null };
@@ -463,8 +464,14 @@ export const db = {
 
   onAuthStateChange: (callback) => {
     return supabase.auth.onAuthStateChange(callback);
-  }
+  },
+
+getVolunteerStats: getVolunteerStats,
+  getEventStats: getEventStats,
+  getOrganizationMemberStats: getOrganizationMemberStats
+  
 };
+
 
 // Helper functions for donation statistics
 function getTopCauses(donations) {
@@ -491,5 +498,105 @@ function getMonthlyTrend(donations) {
     .slice(-6) // Last 6 months
     .map(([month, amount]) => ({ month, amount }));
 }
+
+// Add these 2 functions after getMonthlyTrend function
+
+// Helper function to get volunteer statistics
+async function getVolunteerStats() {
+  try {
+    const { data, error } = await supabase
+      .from('volunteers')
+      .select('id, status');
+      
+    if (error) throw error;
+    
+    const totalVolunteers = data?.length || 0;
+    const activeVolunteers = data?.filter(v => v.status === 'active').length || 0;
+    
+    return {
+      data: {
+        totalVolunteers,
+        activeVolunteers
+      }
+    };
+  } catch (error) {
+    console.error('Error getting volunteer stats:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+// Helper function to get event statistics  
+async function getEventStats() {
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select('id, event_status');
+    
+    if (error) throw error;
+    
+    const completedEvents = data?.filter(event => 
+      (event.event_status || '').toLowerCase() === 'completed'
+    ).length || 0;
+    
+    return {
+      data: {
+        completedEvents
+      }
+    };
+  } catch (error) {
+    console.error('Error getting event stats:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+// Helper function to get team member statistics
+async function getTeamMemberStats() {
+  try {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('id, status');
+      
+    if (error) throw error;
+    
+    const totalTeamMembers = data?.length || 0;
+    const activeTeamMembers = data?.filter(m => m.status !== 'inactive').length || 0;
+    
+    return {
+      data: {
+        totalTeamMembers,
+        activeTeamMembers
+      }
+    };
+  } catch (error) {
+    console.error('Error getting team member stats:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+async function getOrganizationMemberStats() {
+  try {
+    const { data, error } = await supabase
+      .from('organization_members')
+      .select('id, status');
+      
+    if (error) throw error;
+    
+    const totalOrgMembers = data?.length || 0;
+    const activeOrgMembers = data?.filter(m => m.status !== 'inactive').length || 0;
+    
+    return {
+      data: {
+        totalOrgMembers,
+        activeOrgMembers
+      }
+    };
+  } catch (error) {
+    console.error('Error getting organization member stats:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+
+
 
 export default supabase;

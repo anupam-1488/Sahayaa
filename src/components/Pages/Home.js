@@ -1,64 +1,81 @@
-// src/components/Pages/Home.js - Updated with Donation CTAs
+// src/components/Pages/Home.js - Simplified with Dynamic Counts
 import React, { useState, useEffect } from 'react';
 import { 
   Target, Activity, Users, Heart, Globe, CheckCircle, TrendingUp, Star, User,
-  Calendar, Clock, MapPin, ArrowRight, Image as ImageIcon, Eye, IndianRupee,
-  CreditCard, Shield, Award, GraduationCap, Utensils, Home as HomeIcon
+  Calendar, Clock, MapPin, ArrowRight, Image as ImageIcon, Eye,
+  GraduationCap, Utensils, Home as HomeIcon
 } from 'lucide-react';
-import { SAHAYAA_VALUES, CORE_VALUES, DEFAULT_STATS } from '../../utils/constants';
+import { SAHAYAA_VALUES, CORE_VALUES } from '../../utils/constants';
 import { db } from '../../config/supabase';
+
 
 const Home = ({ 
   setActiveSection, 
   setShowContactForm, 
-  stats = DEFAULT_STATS, 
   testimonials = [],
   events = []
 }) => {
-  const [donationStats, setDonationStats] = useState(null);
-  const [recentDonations, setRecentDonations] = useState([]);
+  const [dynamicStats, setDynamicStats] = useState({
+    peopleHelped: 5000,
+    eventsCompleted: 0,
+    volunteers: 50,
+    donors: 0,
+    yearsOfService: 5
+  });
 
   useEffect(() => {
-    loadDonationData();
+    loadDynamicCounts();
   }, []);
 
-  const loadDonationData = async () => {
+  const loadDynamicCounts = async () => {
     try {
-      const [statsResult, publicDonationsResult] = await Promise.all([
+      // Load actual counts from database
+      const [donationStats, eventStats,volunteerStats,orgStats] = await Promise.all([
         db.getDonationStats(),
-        db.getPublicDonations(5)
+        db.getEventStats(),
+      db.getVolunteerStats(), 
+      db.getOrganizationMemberStats(),
       ]);
 
-      if (statsResult.data) {
-        setDonationStats(statsResult.data);
-      }
+      setDynamicStats(prev => ({
+        ...prev,
+        donors: donationStats.data?.uniqueDonors || 0,
+        eventsCompleted: eventStats.data?.completedEvents || 0,
+        volunteers: volunteerStats.data?.totalVolunteers || 50,
+        members: orgStats.data?.totalOrgMembers || 25   
 
-      if (publicDonationsResult.data) {
-        setRecentDonations(publicDonationsResult.data);
-      }
+        // Keep other values as default for now
+      }));
     } catch (error) {
-      console.error('Error loading donation data:', error);
+      console.error('Error loading dynamic counts:', error);
     }
   };
 
   return (
     <div className="space-y-16">
       {/* Hero Section */}
-      <HeroSection setActiveSection={setActiveSection} setShowContactForm={setShowContactForm} stats={stats} />
+      <HeroSection 
+        setActiveSection={setActiveSection} 
+        setShowContactForm={setShowContactForm} 
+        stats={dynamicStats} 
+      />
       
-      {/* Donation Call to Action */}
-      <DonationCTA setActiveSection={setActiveSection} donationStats={donationStats} />
-      
-      {/* Recent Donations Wall */}
-      {recentDonations.length > 0 && (
-        <RecentDonations donations={recentDonations} setActiveSection={setActiveSection} />
-      )}
+      {/* Simplified Donation Section */}
+      <SimpleDonationSection setActiveSection={setActiveSection} />
       
       {/* Upcoming Events Section */}
       <UpcomingEventsSection events={events} setActiveSection={setActiveSection} />
       
       {/* Event Highlights Section */}
       <EventHighlightsSection events={events} setActiveSection={setActiveSection} />
+      
+      {/* Impact Dashboard */}
+      {/* <ImpactDashboard /> */}
+      
+      {/* Donation Calculator */}
+      {/* <DonationCalculator onDonate={(amount, cause) => {
+        setActiveSection('donations');
+      }} /> */}
       
       {/* Vision & Mission */}
       <VisionMission />
@@ -78,189 +95,76 @@ const Home = ({
   );
 };
 
-const DonationCTA = ({ setActiveSection, donationStats }) => (
-  <div className="relative bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 text-white rounded-3xl overflow-hidden">
-    <div className="absolute inset-0 bg-black/10"></div>
-    <div className="relative z-10 p-12">
-      <div className="grid lg:grid-cols-2 gap-12 items-center">
-        {/* Left Content */}
-        <div>
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <Heart className="w-6 h-6 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold">Make a Difference Today</h2>
-          </div>
-          
-          <p className="text-xl text-green-100 mb-8 leading-relaxed">
-            Your donation helps us continue our mission of building a compassionate society. 
-            Every contribution, no matter the size, creates ripples of positive change.
-          </p>
-
-          {/* Quick Donation Amounts */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <DonationButton amount={500} impact="Sponsor a child's education for 1 month" setActiveSection={setActiveSection} />
-            <DonationButton amount={1000} impact="Provide medical care for 5 people" setActiveSection={setActiveSection} />
-            <DonationButton amount={2500} impact="Support community development" setActiveSection={setActiveSection} />
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => setActiveSection('donations')}
-              className="bg-white text-green-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold flex items-center space-x-2"
-            >
-              <CreditCard className="w-5 h-5" />
-              <span>Donate Now</span>
-            </button>
-            
-            <div className="flex items-center space-x-4 text-green-100">
-              <div className="flex items-center space-x-1">
-                <Shield className="w-4 h-4" />
-                <span className="text-sm">100% Secure</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Award className="w-4 h-4" />
-                <span className="text-sm">80G Tax Benefit</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Stats */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-          <h3 className="text-xl font-bold mb-6">Our Impact So Far</h3>
-          
-          {donationStats ? (
-            <div className="grid grid-cols-2 gap-6">
-              <ImpactStat
-                icon={IndianRupee}
-                value={`₹${donationStats.totalAmount.toLocaleString('en-IN')}`}
-                label="Total Raised"
-              />
-              <ImpactStat
-                icon={Users}
-                value={donationStats.uniqueDonors}
-                label="Donors"
-              />
-              <ImpactStat
-                icon={Heart}
-                value={donationStats.totalDonations}
-                label="Donations"
-              />
-              <ImpactStat
-                icon={TrendingUp}
-                value={`₹${donationStats.averageDonation.toLocaleString('en-IN')}`}
-                label="Avg Donation"
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-6">
-              <ImpactStat icon={IndianRupee} value="₹50L+" label="Target" />
-              <ImpactStat icon={Users} value="1000+" label="Goal" />
-              <ImpactStat icon={Heart} value="2000+" label="Target" />
-              <ImpactStat icon={TrendingUp} value="Growing" label="Impact" />
-            </div>
-          )}
-
-          <div className="mt-6 pt-6 border-t border-white/20">
-            <h4 className="font-semibold mb-3">Popular Causes</h4>
-            <div className="flex flex-wrap gap-2">
-              <CauseBadge icon={GraduationCap} text="Education" />
-              <CauseBadge icon={Activity} text="Healthcare" />
-              <CauseBadge icon={Utensils} text="Nutrition" />
-              <CauseBadge icon={HomeIcon} text="Community" />
-            </div>
-          </div>
-        </div>
+// Simplified Donation Section (removed comparison stats)
+const SimpleDonationSection = ({ setActiveSection }) => (
+  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-10 rounded-3xl border border-green-200">
+    <div className="text-center max-w-4xl mx-auto">
+      <div className="flex items-center justify-center mb-6">
+        <Heart className="w-10 h-10 text-green-600 mr-3" />
+        <h2 className="text-4xl font-bold text-green-800">Support Our Mission</h2>
       </div>
-    </div>
-  </div>
-);
-
-const DonationButton = ({ amount, impact, setActiveSection }) => (
-  <button
-    onClick={() => setActiveSection('donations')}
-    className="bg-white/20 hover:bg-white/30 p-4 rounded-lg text-center transition-colors group"
-  >
-    <div className="text-2xl font-bold mb-1">₹{amount.toLocaleString()}</div>
-    <div className="text-xs text-green-100 opacity-90 group-hover:opacity-100">{impact}</div>
-  </button>
-);
-
-const ImpactStat = ({ icon: Icon, value, label }) => (
-  <div className="text-center">
-    <Icon className="w-8 h-8 text-white/80 mx-auto mb-2" />
-    <div className="text-2xl font-bold">{value}</div>
-    <div className="text-green-100 text-sm">{label}</div>
-  </div>
-);
-
-const CauseBadge = ({ icon: Icon, text }) => (
-  <div className="flex items-center space-x-1 bg-white/20 px-3 py-1 rounded-full text-sm">
-    <Icon className="w-3 h-3" />
-    <span>{text}</span>
-  </div>
-);
-
-const RecentDonations = ({ donations, setActiveSection }) => (
-  <div className="bg-white p-10 rounded-3xl shadow-xl">
-    <div className="text-center mb-8">
-      <div className="flex items-center justify-center mb-4">
-        <Heart className="w-8 h-8 text-red-500 mr-3" />
-        <h2 className="text-4xl font-bold text-green-800">Recent Donations</h2>
-      </div>
-      <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-        Thank you to our amazing donors who are making a difference in our community.
+      
+      <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+        Your support helps us continue building a compassionate society where everyone lives with dignity, 
+        health, knowledge, and joy. Every contribution makes a meaningful difference.
       </p>
-    </div>
-    
-    <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-      {donations.map((donation, index) => (
-        <DonationCard key={index} donation={donation} />
-      ))}
-    </div>
-    
-    <div className="text-center">
+
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <ImpactCard 
+          icon={GraduationCap}
+          title="Education Support"
+          description="Help provide quality education and learning resources to children in need"
+          color="blue"
+        />
+        <ImpactCard 
+          icon={Activity}
+          title="Healthcare Access"
+          description="Support medical care and health awareness programs in communities"
+          color="red"
+        />
+        <ImpactCard 
+          icon={Utensils}
+          title="Nutrition Programs"
+          description="Fight hunger and malnutrition with nutritious meal programs"
+          color="orange"
+        />
+      </div>
+
       <button
         onClick={() => setActiveSection('donations')}
-        className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 mx-auto"
+        className="bg-green-600 text-white px-10 py-4 rounded-lg hover:bg-green-700 transition-colors font-semibold text-lg"
       >
-        <Heart className="w-5 h-5" />
-        <span>Join Our Donors</span>
-        <ArrowRight className="w-5 h-5" />
+        Make a Donation
       </button>
     </div>
   </div>
 );
 
-const DonationCard = ({ donation }) => (
-  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100 text-center">
-    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-      <User className="w-6 h-6 text-green-600" />
+const ImpactCard = ({ icon: Icon, title, description, color }) => {
+  const colors = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-600',
+    red: 'bg-red-50 border-red-200 text-red-600',
+    orange: 'bg-orange-50 border-orange-200 text-orange-600'
+  };
+
+  return (
+    <div className={`p-6 rounded-xl border ${colors[color].split(' ')[0]} ${colors[color].split(' ')[1]}`}>
+      <Icon className={`w-10 h-10 mx-auto mb-4 ${colors[color].split(' ')[2]}`} />
+      <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
+      <p className="text-gray-600 text-sm">{description}</p>
     </div>
-    <h4 className="font-semibold text-green-800 mb-1 text-sm">{donation.donor_name}</h4>
-    <p className="text-2xl font-bold text-green-600 mb-1">₹{parseFloat(donation.amount).toLocaleString('en-IN')}</p>
-    <p className="text-xs text-green-700 mb-2">{donation.cause}</p>
-    <p className="text-xs text-gray-500">{formatDate(donation.created_at)}</p>
-    {donation.comments && (
-      <p className="text-xs text-gray-600 mt-2 italic line-clamp-2">"{donation.comments}"</p>
-    )}
-  </div>
-);
+  );
+};
 
 const UpcomingEventsSection = ({ events, setActiveSection }) => {
-  // Filter upcoming events with more flexible criteria
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
   const upcomingEvents = events
     .filter(event => {
       const eventDate = new Date(event.date);
-      
-      // More flexible filtering: show if date is today or future, and not explicitly cancelled
       const isUpcoming = eventDate >= today;
       const isNotCancelled = (event.event_status || '').toLowerCase() !== 'cancelled';
-      
       return isUpcoming && isNotCancelled;
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -274,7 +178,7 @@ const UpcomingEventsSection = ({ events, setActiveSection }) => {
           <h2 className="text-4xl font-bold text-green-800">Upcoming Events</h2>
         </div>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Join us in our upcoming activities and be part of the positive change in our community.
+          Join us in our upcoming activities and be part of positive change in our community.
         </p>
       </div>
       
@@ -316,18 +220,14 @@ const UpcomingEventsSection = ({ events, setActiveSection }) => {
 };
 
 const EventHighlightsSection = ({ events, setActiveSection }) => {
-  // Filter for highlight events with more flexible criteria
   const highlightEvents = events
     .filter(event => {
-      // Show if featured OR has gallery images OR is a significant past event
       const isFeatured = event.is_featured === true;
       const hasGallery = event.gallery_images && event.gallery_images.length > 0;
       const isCompleted = (event.event_status || '').toLowerCase() === 'completed';
-      
       return isFeatured || (isCompleted && hasGallery) || hasGallery;
     })
     .sort((a, b) => {
-      // Sort by featured first, then by date (newest first)
       if (a.is_featured && !b.is_featured) return -1;
       if (!a.is_featured && b.is_featured) return 1;
       return new Date(b.date) - new Date(a.date);
@@ -384,7 +284,6 @@ const UpcomingEventCard = ({ event }) => {
 
   return (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100 hover:shadow-lg transition-all duration-300">
-      {/* Days until event badge and category */}
       <div className="flex justify-between items-start mb-4">
         <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
           {event.category}
@@ -394,7 +293,6 @@ const UpcomingEventCard = ({ event }) => {
         </span>
       </div>
       
-      {/* Featured badge */}
       {event.is_featured && (
         <div className="mb-3">
           <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 w-fit">
@@ -436,7 +334,6 @@ const UpcomingEventCard = ({ event }) => {
 
 const HighlightEventCard = ({ event }) => (
   <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl hover:bg-white/20 transition-all duration-300">
-    {/* Event image or placeholder */}
     <div className="h-40 bg-white/20 rounded-lg mb-4 overflow-hidden">
       {event.gallery_images && event.gallery_images.length > 0 ? (
         <img 
@@ -513,14 +410,12 @@ const HeroSection = ({ setActiveSection, setShowContactForm, stats }) => (
           Meet Our Team
         </ActionButton>
         <ActionButton onClick={() => setActiveSection('donations')} variant="emerald">
-          Donate Now
+          Support Us
         </ActionButton>
         <ActionButton onClick={() => setActiveSection('events')}>
           Upcoming Events
         </ActionButton>
-        <ActionButton onClick={() => setShowContactForm(true)} variant="blue">
-          Get Involved
-        </ActionButton>
+       
       </div>
       <StatsGrid stats={stats} />
     </div>
@@ -547,12 +442,13 @@ const ActionButton = ({ children, onClick, primary, variant = 'green' }) => {
   );
 };
 
+// Updated StatsGrid with dynamic counts
 const StatsGrid = ({ stats }) => (
   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
     <StatCard value={`${stats.peopleHelped.toLocaleString()}+`} label="People Helped" />
-    <StatCard value={`${stats.eventsCompleted}+`} label="Events Completed" />
-    <StatCard value={`${stats.volunteers}+`} label="Active Volunteers" />
-    <StatCard value={stats.yearsOfService} label="Years of Service" />
+    <StatCard value={`${stats.eventsCompleted}`} label="Events Completed" />
+    <StatCard value={`${stats.volunteers}`} label="Volunteers" />
+    <StatCard value={`${stats.members}`} label="Donors" />
   </div>
 );
 
