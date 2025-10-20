@@ -1,4 +1,4 @@
-// src/components/SahayaaApp.js - Without Admin Panel
+// src/components/SahayaaApp.js - Optimized with Lazy Loading
 import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db } from '../config/supabase';
 import { DEFAULT_STATS } from '../utils/constants';
@@ -33,7 +33,7 @@ const SahayaaApp = () => {
   // Navigation state
   const [activeSection, setActiveSection] = useState('home');
 
-  // Data state
+  // Data state - now loaded individually when needed
   const [teamMembers, setTeamMembers] = useState([]);
   const [organizationMembers, setOrganizationMembers] = useState([]);
   const [events, setEvents] = useState([]);
@@ -41,8 +41,14 @@ const SahayaaApp = () => {
   const [testimonials, setTestimonials] = useState([]);
   const [stats, setStats] = useState(DEFAULT_STATS);
 
-  // Loading states
-  const [dataLoading, setDataLoading] = useState(true);
+  // Loading states for individual data
+  const [dataLoadingStates, setDataLoadingStates] = useState({
+    teamMembers: false,
+    organizationMembers: false,
+    events: false,
+    volunteers: false,
+    testimonials: false
+  });
 
   // Contact form state
   const [showContactForm, setShowContactForm] = useState(false);
@@ -63,7 +69,6 @@ const SahayaaApp = () => {
   const handleSectionChange = (section) => {
     setActiveSection(section);
     
-    // Update URL without page reload
     const routes = {
       'terms': '/terms-and-conditions',
       'privacy': '/privacy-policy', 
@@ -82,17 +87,18 @@ const SahayaaApp = () => {
     }
   };
 
-  // Initialize the application
+  // Initialize the application - MUCH FASTER
   useEffect(() => {
     initializeApp();
   }, []);
 
   const initializeApp = async () => {
-    await Promise.all([
-      checkAuthState(),
-      loadData()
-    ]);
+    // Only check auth - no data loading
+    await checkAuthState();
     setAuthLoading(false);
+    
+    // Load essential data for home page in background
+    loadHomePageData();
   };
 
   const checkAuthState = useCallback(async () => {
@@ -102,7 +108,6 @@ const SahayaaApp = () => {
         setUser(session.user);
       }
 
-      // Listen for auth changes
       const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
         setUser(session?.user || null);
       });
@@ -113,59 +118,89 @@ const SahayaaApp = () => {
     }
   }, []);
 
-  const loadData = useCallback(async () => {
-    setDataLoading(true);
+  // Load only essential data for home page
+  const loadHomePageData = async () => {
     try {
-      // Load all data from Supabase
-      const [
-        teamMembersResult, 
-        orgMembersResult, 
-        eventsResult, 
-        volunteersResult, 
-        testimonialsResult, 
-        statsResult
-      ] = await Promise.all([
-        db.getTeamMembers(),
-        db.getOrganizationMembers(),
+      // Only load events and testimonials for home page - much faster
+      const [eventsResult, testimonialsResult] = await Promise.all([
         db.getEvents(),
-        db.getVolunteers(),
-        db.getTestimonials(),
-        db.getStats()
+        db.getTestimonials()
       ]);
 
-      // Set data with error handling
-      setTeamMembers(teamMembersResult.data || []);
-      setOrganizationMembers(orgMembersResult.data || []);
       setEvents(eventsResult.data || []);
-      setVolunteers(volunteersResult.data || []);
       setTestimonials(testimonialsResult.data || []);
       
-      // Set stats from database or use defaults
-      if (statsResult.data) {
-        setStats({
-          peopleHelped: statsResult.data.people_helped || DEFAULT_STATS.peopleHelped,
-          eventsCompleted: statsResult.data.events_completed || DEFAULT_STATS.eventsCompleted,
-          volunteers: statsResult.data.active_volunteers || DEFAULT_STATS.volunteers,
-          yearsOfService: statsResult.data.years_of_service || DEFAULT_STATS.yearsOfService
-        });
-      } else {
-        setStats(DEFAULT_STATS);
-      }
-
-      // Log any errors
-      if (teamMembersResult.error) console.error('Error loading team members:', teamMembersResult.error);
-      if (orgMembersResult.error) console.error('Error loading org members:', orgMembersResult.error);
       if (eventsResult.error) console.error('Error loading events:', eventsResult.error);
-      if (volunteersResult.error) console.error('Error loading volunteers:', volunteersResult.error);
       if (testimonialsResult.error) console.error('Error loading testimonials:', testimonialsResult.error);
-      if (statsResult.error) console.error('Error loading stats:', statsResult.error);
-
     } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setDataLoading(false);
+      console.error('Error loading home page data:', error);
     }
-  }, []);
+  };
+
+  // Lazy load team members when needed
+  const loadTeamMembers = useCallback(async () => {
+    if (teamMembers.length > 0 || dataLoadingStates.teamMembers) return;
+    
+    setDataLoadingStates(prev => ({ ...prev, teamMembers: true }));
+    try {
+      const result = await db.getTeamMembers();
+      setTeamMembers(result.data || []);
+      if (result.error) console.error('Error loading team members:', result.error);
+    } catch (error) {
+      console.error('Error loading team members:', error);
+    } finally {
+      setDataLoadingStates(prev => ({ ...prev, teamMembers: false }));
+    }
+  }, [teamMembers, dataLoadingStates.teamMembers]);
+
+  // Lazy load organization members when needed
+  const loadOrganizationMembers = useCallback(async () => {
+    if (organizationMembers.length > 0 || dataLoadingStates.organizationMembers) return;
+    
+    setDataLoadingStates(prev => ({ ...prev, organizationMembers: true }));
+    try {
+      const result = await db.getOrganizationMembers();
+      setOrganizationMembers(result.data || []);
+      if (result.error) console.error('Error loading org members:', result.error);
+    } catch (error) {
+      console.error('Error loading org members:', error);
+    } finally {
+      setDataLoadingStates(prev => ({ ...prev, organizationMembers: false }));
+    }
+  }, [organizationMembers, dataLoadingStates.organizationMembers]);
+
+  // Lazy load volunteers when needed
+  const loadVolunteers = useCallback(async () => {
+    if (volunteers.length > 0 || dataLoadingStates.volunteers) return;
+    
+    setDataLoadingStates(prev => ({ ...prev, volunteers: true }));
+    try {
+      const result = await db.getVolunteers();
+      setVolunteers(result.data || []);
+      if (result.error) console.error('Error loading volunteers:', result.error);
+    } catch (error) {
+      console.error('Error loading volunteers:', error);
+    } finally {
+      setDataLoadingStates(prev => ({ ...prev, volunteers: false }));
+    }
+  }, [volunteers, dataLoadingStates.volunteers]);
+
+  // Load data when section changes
+  useEffect(() => {
+    switch (activeSection) {
+      case 'about':
+        loadTeamMembers();
+        break;
+      case 'members':
+        loadOrganizationMembers();
+        break;
+      case 'volunteers':
+        loadVolunteers();
+        break;
+      default:
+        break;
+    }
+  }, [activeSection, loadTeamMembers, loadOrganizationMembers, loadVolunteers]);
 
   const handleLogout = async () => {
     try {
@@ -174,7 +209,6 @@ const SahayaaApp = () => {
         console.error('Logout error:', error);
       } else {
         setUser(null);
-        // Redirect to home
         handleSectionChange('home');
       }
     } catch (error) {
@@ -182,7 +216,7 @@ const SahayaaApp = () => {
     }
   };
 
-  // Handle team member operations
+  // All the handle functions remain the same...
   const handleTeamMemberCreate = async (memberData) => {
     try {
       const { data, error } = await db.createTeamMember(memberData);
@@ -228,7 +262,6 @@ const SahayaaApp = () => {
     }
   };
 
-  // Handle organization member operations
   const handleOrgMemberCreate = async (memberData) => {
     try {
       const { data, error } = await db.createOrganizationMember(memberData);
@@ -274,7 +307,6 @@ const SahayaaApp = () => {
     }
   };
 
-  // Handle event operations
   const handleEventCreate = async (eventData) => {
     try {
       const { data, error } = await db.createEvent(eventData);
@@ -320,7 +352,6 @@ const SahayaaApp = () => {
     }
   };
 
-  // Handle volunteer operations
   const handleVolunteerCreate = async (volunteerData) => {
     try {
       const { data, error } = await db.createVolunteer(volunteerData);
@@ -366,7 +397,6 @@ const SahayaaApp = () => {
     }
   };
 
-  // Handle testimonial operations
   const handleTestimonialCreate = async (testimonialData) => {
     try {
       const { data, error } = await db.createTestimonial(testimonialData);
@@ -412,7 +442,7 @@ const SahayaaApp = () => {
     }
   };
 
-  // Render loading state
+  // Show loading only for auth - much faster!
   if (authLoading) {
     return <LoadingScreen />;
   }
@@ -428,95 +458,86 @@ const SahayaaApp = () => {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {dataLoading ? (
-          <DataLoadingState />
-        ) : (
-          <>
-            {activeSection === 'home' && (
-              <Home
-                setActiveSection={handleSectionChange}
-                setShowContactForm={setShowContactForm}
-                stats={stats}
-                testimonials={testimonials}
-                events={events}
-              />
-            )}
-            
-            {activeSection === 'about' && (
-              <Team
-                members={teamMembers}
-                setMembers={setTeamMembers}
-                testimonials={testimonials}
-                setTestimonials={setTestimonials}
-                user={user}
-                onMemberCreate={handleTeamMemberCreate}
-                onMemberUpdate={handleTeamMemberUpdate}
-                onMemberDelete={handleTeamMemberDelete}
-                onTestimonialCreate={handleTestimonialCreate}
-                onTestimonialUpdate={handleTestimonialUpdate}
-                onTestimonialDelete={handleTestimonialDelete}
-              />
-            )}
-            
-            {activeSection === 'members' && (
-              <Members
-                members={organizationMembers}
-                setMembers={setOrganizationMembers}
-                user={user}
-                onMemberCreate={handleOrgMemberCreate}
-                onMemberUpdate={handleOrgMemberUpdate}
-                onMemberDelete={handleOrgMemberDelete}
-              />
-            )}
-            
-            {activeSection === 'events' && (
-              <Events
-                events={events}
-                setEvents={setEvents}
-                user={user}
-                onEventCreate={handleEventCreate}
-                onEventUpdate={handleEventUpdate}
-                onEventDelete={handleEventDelete}
-              />
-            )}
-            
-            {activeSection === 'volunteers' && (
-              <Volunteers
-                volunteers={volunteers}
-                setVolunteers={setVolunteers}
-                user={user}
-                onVolunteerCreate={handleVolunteerCreate}
-                onVolunteerUpdate={handleVolunteerUpdate}
-                onVolunteerDelete={handleVolunteerDelete}
-              />
-            )}
-            
-            {activeSection === 'donations' && (
-              <Donations />
-            )}
-            
-            {/* Policy Pages */}
-            {activeSection === 'terms' && <TermsAndConditions />}
-            {activeSection === 'privacy' && <PrivacyPolicy />}
-            {activeSection === 'refund' && <RefundPolicy />}
-            
-            {activeSection === 'contact' && (
-              <Contact />
-            )}
-          </>
+        {activeSection === 'home' && (
+          <Home
+            setActiveSection={handleSectionChange}
+            setShowContactForm={setShowContactForm}
+            stats={stats}
+            testimonials={testimonials}
+            events={events}
+          />
         )}
+        
+        {activeSection === 'about' && (
+          <Team
+            members={teamMembers}
+            setMembers={setTeamMembers}
+            testimonials={testimonials}
+            setTestimonials={setTestimonials}
+            user={user}
+            onMemberCreate={handleTeamMemberCreate}
+            onMemberUpdate={handleTeamMemberUpdate}
+            onMemberDelete={handleTeamMemberDelete}
+            onTestimonialCreate={handleTestimonialCreate}
+            onTestimonialUpdate={handleTestimonialUpdate}
+            onTestimonialDelete={handleTestimonialDelete}
+            loading={dataLoadingStates.teamMembers}
+          />
+        )}
+        
+        {activeSection === 'members' && (
+          <Members
+            members={organizationMembers}
+            setMembers={setOrganizationMembers}
+            user={user}
+            onMemberCreate={handleOrgMemberCreate}
+            onMemberUpdate={handleOrgMemberUpdate}
+            onMemberDelete={handleOrgMemberDelete}
+            loading={dataLoadingStates.organizationMembers}
+          />
+        )}
+        
+        {activeSection === 'events' && (
+          <Events
+            events={events}
+            setEvents={setEvents}
+            user={user}
+            onEventCreate={handleEventCreate}
+            onEventUpdate={handleEventUpdate}
+            onEventDelete={handleEventDelete}
+          />
+        )}
+        
+        {activeSection === 'volunteers' && (
+          <Volunteers
+            volunteers={volunteers}
+            setVolunteers={setVolunteers}
+            user={user}
+            onVolunteerCreate={handleVolunteerCreate}
+            onVolunteerUpdate={handleVolunteerUpdate}
+            onVolunteerDelete={handleVolunteerDelete}
+            loading={dataLoadingStates.volunteers}
+          />
+        )}
+        
+        {activeSection === 'donations' && (
+          <Donations />
+        )}
+        
+        {activeSection === 'terms' && <TermsAndConditions />}
+        {activeSection === 'privacy' && <PrivacyPolicy />}
+        {activeSection === 'refund' && <RefundPolicy />}
+        {activeSection === 'contact' && <Contact />}
       </main>
 
       <Footer setActiveSection={handleSectionChange} />
 
-      {/* Modals */}
       <Login
         showLogin={showLogin}
         setShowLogin={setShowLogin}
         setUser={setUser}
       />
 
-      {/* Contact Form Modal */}
       {showContactForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
@@ -557,28 +578,6 @@ const LoadingScreen = () => (
       </div>
       <h2 className="text-2xl font-bold text-green-800 mb-2">Sahayaa Trust</h2>
       <p className="text-green-600">Loading...</p>
-    </div>
-  </div>
-);
-
-const DataLoadingState = () => (
-  <div className="space-y-8">
-    <div className="text-center">
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-64 mx-auto mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-96 mx-auto"></div>
-      </div>
-    </div>
-    <div className="grid md:grid-cols-3 gap-6">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white p-6 rounded-2xl shadow-sm">
-          <div className="animate-pulse">
-            <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        </div>
-      ))}
     </div>
   </div>
 );
