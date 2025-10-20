@@ -26,29 +26,27 @@ const Header = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo and Brand */}
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
-              {/* <Heart className="w-7 h-7 text-white" /> */}
-<img
-  src="/logo.jpg"
-  alt="Sahayaa Trust Logo"
-  className="w-12 h-12 rounded-full object-cover"
-/>
-
+          <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
+            <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+              <img
+                src="/logo.jpg"
+                alt="Sahayaa Trust Logo"
+                className="w-10 sm:w-12 h-10 sm:h-12 rounded-full object-cover"
+              />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-green-800">Sahayaa</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-green-800">Sahayaa</h1>
               <p className="text-xs text-green-600 hidden sm:block">The one who stands with you</p>
             </div>
           </div>
           
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation - Changed to lg:flex to show only on large screens */}
+          <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
             {NAVIGATION_ITEMS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavigationClick(item.id)}
-                className={`font-medium transition-colors capitalize ${
+                className={`font-medium transition-colors capitalize whitespace-nowrap ${
                   activeSection === item.id 
                     ? 'text-green-600 border-b-2 border-green-600 pb-1' 
                     : 'text-gray-600 hover:text-green-600'
@@ -60,9 +58,9 @@ const Header = ({
           </div>
           
           {/* Authentication and Mobile Menu */}
-          <div className="flex items-center space-x-4">
-            {/* Desktop Auth */}
-            <div className="hidden md:block">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+            {/* Desktop Auth - Changed to lg:block to show only on large screens */}
+            <div className="hidden lg:block">
               {user ? (
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2 bg-green-50 px-3 py-2 rounded-lg">
@@ -80,27 +78,28 @@ const Header = ({
               ) : (
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center space-x-2 bg-green-600 text-white px-3 xl:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm xl:text-base"
                 >
                   <Lock className="w-4 h-4" />
-                  <span>Admin Login</span>
+                  <span className="hidden xl:inline">Admin Login</span>
+                  <span className="xl:hidden">Login</span>
                 </button>
               )}
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Changed to lg:hidden to show on tablets too */}
             <button
               onClick={toggleMobileMenu}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors"
+              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Changed to lg:hidden */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 py-4">
+          <div className="lg:hidden border-t border-gray-100 py-4">
             <div className="space-y-3">
               {/* Mobile Navigation */}
               {NAVIGATION_ITEMS.map((item) => (
