@@ -41,8 +41,8 @@ const Home = ({
         ...prev,
         donors: donationStats.data?.uniqueDonors || 0,
         eventsCompleted: eventStats.data?.completedEvents || 0,
-        volunteers: volunteerStats.data?.totalVolunteers || 50,
-        members: orgStats.data?.totalOrgMembers || 25   
+        volunteers: volunteerStats.data?.totalVolunteers || 0,
+        members: orgStats.data?.totalOrgMembers || 0   
 
         // Keep other values as default for now
       }));
@@ -333,79 +333,86 @@ const UpcomingEventCard = ({ event }) => {
 };
 
 const HighlightEventCard = ({ event }) => (
-  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl hover:bg-white/20 transition-all duration-300">
-    <div className="h-40 bg-white/20 rounded-lg mb-4 overflow-hidden">
+  <div className="bg-white/10 backdrop-blur-sm p-4 sm:p-6 rounded-2xl hover:bg-white/20 transition-all duration-300">
+    {/* Fixed image container */}
+    <div className="h-32 sm:h-40 bg-white/20 rounded-lg mb-4 overflow-hidden relative">
       {event.gallery_images && event.gallery_images.length > 0 ? (
         <img 
           src={event.gallery_images[0]} 
           alt={event.title}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
       ) : event.image ? (
         <img 
           src={event.image} 
           alt={event.title}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <ImageIcon className="w-12 h-12 text-white/60" />
+          <ImageIcon className="w-8 sm:w-12 h-8 sm:h-12 text-white/60" />
         </div>
       )}
     </div>
     
-    <div className="flex justify-between items-start mb-3">
-      <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+    <div className="flex flex-col sm:flex-row justify-between items-start mb-3 gap-2">
+      <span className="bg-white/20 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
         {event.category}
       </span>
       {event.is_featured && (
-        <Star className="w-5 h-5 text-yellow-300 fill-current" />
+        <Star className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-300 fill-current flex-shrink-0" />
       )}
     </div>
     
-    <h3 className="text-lg font-bold mb-2">{event.title}</h3>
+    <h3 className="text-base sm:text-lg font-bold mb-2 line-clamp-2">{event.title}</h3>
     
-    <div className="space-y-1 text-sm text-green-100 mb-3">
+    <div className="space-y-1 text-xs sm:text-sm text-green-100 mb-3">
       <div className="flex items-center space-x-2">
-        <Calendar className="w-4 h-4" />
-        <span>{formatDate(event.date)}</span>
+        <Calendar className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0" />
+        <span className="truncate">{formatDate(event.date)}</span>
       </div>
       <div className="flex items-center space-x-2">
-        <MapPin className="w-4 h-4" />
+        <MapPin className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0" />
         <span className="truncate">{event.location}</span>
       </div>
     </div>
     
     {event.gallery_images && event.gallery_images.length > 1 && (
-      <div className="flex items-center space-x-2 text-sm text-green-100">
-        <ImageIcon className="w-4 h-4" />
+      <div className="flex items-center space-x-2 text-xs sm:text-sm text-green-100">
+        <ImageIcon className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0" />
         <span>{event.gallery_images.length} photos available</span>
       </div>
     )}
   </div>
 );
 
+
 const HeroSection = ({ setActiveSection, setShowContactForm, stats }) => (
   <div className="relative text-center py-20 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-3xl overflow-hidden">
     <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 to-emerald-600/10"></div>
-    <div className="relative z-10 flex flex-col items-center">
-      <div className="flex items-center space-x-4 mb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+    <div className="relative z-10 flex flex-col items-center px-4">
+      {/* Logo and Title - Fixed for mobile */}
+      <div className="flex flex-col sm:flex-row items-center justify-center mb-6">
+        <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg mb-4 sm:mb-0 sm:mr-4 flex-shrink-0">
           <img
             src="/logo.jpg"
             alt="Sahayaa Trust Logo"
-            className="w-15 h-15 rounded-full object-cover"
+            className="w-14 h-14 rounded-full object-cover"
           />
         </div>
-        <h1 className="text-5xl sm:text-6xl font-bold text-green-800">
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-green-800 text-center">
           Sahayaa Trust
         </h1>
       </div>
-      <p className="text-xl sm:text-2xl text-green-700 max-w-3xl mx-auto mb-8 leading-relaxed text-center">
+      
+      {/* Subtitle */}
+      <p className="text-lg sm:text-xl lg:text-2xl text-green-700 max-w-3xl mx-auto mb-8 leading-relaxed text-center px-4">
         "Sahayaa" means <em>"the one who stands with you"</em><br />
         Building a compassionate society where everyone lives with dignity, health, knowledge, and joy.
       </p>
-      <div className="flex flex-wrap justify-center gap-4 mb-12">
+      
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4 mb-12 w-full max-w-4xl px-4">
         <ActionButton onClick={() => setActiveSection('about')} primary>
           Meet Our Team
         </ActionButton>
@@ -415,15 +422,16 @@ const HeroSection = ({ setActiveSection, setShowContactForm, stats }) => (
         <ActionButton onClick={() => setActiveSection('events')}>
           Upcoming Events
         </ActionButton>
-       
       </div>
+      
       <StatsGrid stats={stats} />
     </div>
   </div>
 );
 
+
 const ActionButton = ({ children, onClick, primary, variant = 'green' }) => {
-  const baseClasses = "px-8 py-4 rounded-full transition-all transform hover:scale-105 shadow-lg";
+  const baseClasses = "w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-full transition-all transform hover:scale-105 shadow-lg text-center";
   const variants = {
     green: primary 
       ? "bg-green-600 text-white hover:bg-green-700" 
@@ -441,6 +449,7 @@ const ActionButton = ({ children, onClick, primary, variant = 'green' }) => {
     </button>
   );
 };
+
 
 // Updated StatsGrid with dynamic counts
 const StatsGrid = ({ stats }) => (
