@@ -41,22 +41,25 @@ const Header = ({
           </div>
           
           {/* Desktop Navigation - Changed to lg:flex to show only on large screens */}
-          <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-            {NAVIGATION_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavigationClick(item.id)}
-                className={`font-medium transition-colors capitalize whitespace-nowrap ${
-                  activeSection === item.id 
-                    ? 'text-green-600 border-b-2 border-green-600 pb-1' 
-                    : 'text-gray-600 hover:text-green-600'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          
+         <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
+  {NAVIGATION_ITEMS.map((item) => (
+    <div key={item.id} className="group relative">
+      <button
+        onClick={() => handleNavigationClick(item.id)}
+        className={`font-medium transition-colors capitalize whitespace-nowrap pb-1
+          ${activeSection === item.id 
+            ? 'text-green-600 border-b-2 border-green-600' 
+            : 'text-gray-600 hover:text-green-600'
+          }
+        `}
+      >
+        {item.label}
+      </button>
+      <span className="absolute left-0 bottom-0 w-full h-0.5 bg-green-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+    </div>
+  ))}
+</div>
+
           {/* Authentication and Mobile Menu */}
           <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
             {/* Desktop Auth - Changed to lg:block to show only on large screens */}

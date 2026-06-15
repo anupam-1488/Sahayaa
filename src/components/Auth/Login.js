@@ -19,16 +19,16 @@ const Login = ({ showLogin, setShowLogin, setUser }) => {
     setError('');
     
     try {
-      // Updated method for modern Supabase
-      const { data, error: authError } = await auth.signInWithPassword({
-        email: loginForm.email,
-        password: loginForm.password,
-      });
+  // Use your helper's name 'signIn' and pass arguments separately
+  const { data, error: authError } = await auth.signIn(
+    loginForm.email, 
+    loginForm.password
+  );
 
-      if (authError) {
-        setError(authError.message);
-        return;
-      }
+  if (authError) {
+    setError(authError.message);
+    return;
+  }
 
       if (data.user) {
         setUser(data.user);

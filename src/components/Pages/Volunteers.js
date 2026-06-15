@@ -265,12 +265,12 @@ const VolunteerOverviewStats = ({ volunteers }) => {
         label="Total Hours"
         color="purple"
       />
-      <StatCard 
+      {/* <StatCard 
         icon={Calendar}
         value={totalEvents}
         label="Events Participated"
         color="orange"
-      />
+      /> */}
     </div>
   );
 };

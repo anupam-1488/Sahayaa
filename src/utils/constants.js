@@ -13,7 +13,8 @@ export const NAVIGATION_ITEMS = [
   { id: 'members', label: 'Members' },
   { id: 'events', label: 'Events' },
   { id: 'volunteers', label: 'Volunteers' },
-  { id: 'contact', label: 'Contact' }
+  { id: 'contact', label: 'Contact' },
+  { id: 'donate', label: 'Donate' },
 ];
 
 // SAHAYAA Values - Updated with Correct Telugu/Sanskrit Meanings

@@ -387,10 +387,26 @@ const HighlightEventCard = ({ event }) => (
 );
 
 
+// Updated HeroSection with Globe GIF Background
 const HeroSection = ({ setActiveSection, setShowContactForm, stats }) => (
-  <div className="relative text-center py-20 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-3xl overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 to-emerald-600/10"></div>
-    <div className="relative z-10 flex flex-col items-center px-4">
+  <div className="relative text-center py-20 bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 rounded-3xl overflow-hidden min-h-[80vh] flex items-center justify-center">
+    {/* Optional: The previous colored overlay, can be removed if GIF is sufficient */}
+    {/* <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 to-emerald-600/10"></div> */}
+
+    {/* ========================================================= */}
+    {/* NEW: Background Globe GIF with Opacity */}
+    {/* ========================================================= */}
+    <img 
+      src="/globe.gif" // Change to the actual filename of your GIF in public folder
+      alt="Globe Animation"
+      // Position it absolutely, cover the background, and set low opacity (10-15%)
+      className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none"
+    />
+    {/* ========================================================= */}
+
+    {/* Content Div - Z-10 keeps this above the GIF */}
+    <div className="relative z-10 flex flex-col items-center px-4 w-full">
+      
       {/* Logo and Title - Fixed for mobile */}
       <div className="flex flex-col sm:flex-row items-center justify-center mb-6">
         <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg mb-4 sm:mb-0 sm:mr-4 flex-shrink-0">
