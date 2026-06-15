@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { 
   X, Mail, Search, Award, Calendar, Clock, MapPin, 
-  Download, User, Phone, Briefcase, Star 
+  Download, User, Briefcase, Star 
 } from 'lucide-react';
 import Modal from './Modal';
 import CertificateGenerator from './CertificateGenerator';

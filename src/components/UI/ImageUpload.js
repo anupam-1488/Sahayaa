@@ -1,6 +1,6 @@
 // src/components/UI/ImageUpload.js
 import React, { useState, useRef } from 'react';
-import { Upload, X, Camera, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Camera } from 'lucide-react';
 
 const ImageUpload = ({ 
   value, 
