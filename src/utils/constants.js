@@ -1,7 +1,7 @@
 // src/utils/constants.js - Updated with Correct SAHAYAA Full Form
 import { 
-  Heart, Users, Target, Globe, CheckCircle, TrendingUp,
-  Activity, Award, Shield, Lightbulb, Link, Sparkles,
+  Heart, Users, Target, Globe, TrendingUp,
+  Activity,  Shield, 
   Building, BookOpen, Home, Utensils, Smile,
   GraduationCap
 } from 'lucide-react';
@@ -264,7 +264,7 @@ export const DONATION_CAUSES = [
 export const QUICK_DONATION_AMOUNTS = [100, 500, 1000, 2500, 5000, 10000];
 
 
-export default {
+const constants ={
   NAVIGATION_ITEMS,
   SAHAYAA_VALUES,
   CORE_VALUES,
@@ -278,3 +278,4 @@ export default {
   QUICK_DONATION_AMOUNTS
 
 };
+export default constants;
