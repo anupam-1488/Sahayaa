@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { 
   Users, Plus, Edit3, Trash2, User, Mail, Phone, Calendar, 
-  Award, Clock, Download, Search, Filter, MapPin, Briefcase,
-  Shield, Eye, EyeOff, Share2
+  Award, Clock, Download, Search, Filter,  Briefcase,
+  Shield,  Share2
 } from 'lucide-react';
 import VolunteerForm from '../Forms/VolunteerForm';
 import VolunteerPortal from '../UI/VolunteerPortal';
@@ -57,9 +57,9 @@ const Volunteers = ({
     setShowShareCard(true);
   };
 
-  const openVolunteerPortal = () => {
-    setShowVolunteerPortal(true);
-  };
+  // const openVolunteerPortal = () => {
+  //   setShowVolunteerPortal(true);
+  // };
 
   // Get unique skills for filter - only visible to admin
   const allSkills = user ? [...new Set(volunteers.flatMap(v => v.skills || []))] : [];
@@ -243,7 +243,7 @@ const VolunteerOverviewStats = ({ volunteers }) => {
   const totalVolunteers = volunteers.length;
   const activeVolunteers = volunteers.filter(v => v.status === 'active').length;
   const totalHours = volunteers.reduce((sum, v) => sum + (v.total_hours || 0), 0);
-  const totalEvents = volunteers.reduce((sum, v) => sum + (v.events_participated || 0), 0);
+  // const totalEvents = volunteers.reduce((sum, v) => sum + (v.events_participated || 0), 0);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

@@ -1,6 +1,6 @@
 // src/components/Layout/Footer.js
 import React from 'react';
-import { Heart, MapPin, Mail, Phone, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import {  MapPin, Mail, Phone, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
 import { CONTACT_INFO, NAVIGATION_ITEMS } from '../../utils/constants';
 
 const Footer = ({ setActiveSection }) => {

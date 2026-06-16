@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { 
   Users, Plus, Edit3, Trash2, User, Mail, Phone, Crown, 
-  Calendar, Award, Building, UserCheck, Shield, Eye
+   Building, UserCheck, Shield, 
 } from 'lucide-react';
 import MemberForm from '../Forms/MemberForm';
 

@@ -163,6 +163,21 @@ export const db = {
     }
   },
 
+  updateEventGallery: async (eventId, galleryImages) => {
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .update({ gallery_images: galleryImages })
+      .eq('id', eventId)
+      .select();
+
+    return { data, error, success: !error };
+  } catch (error) {
+    console.error('Error updating event gallery:', error);
+    return { data: null, error, success: false };
+  }
+},
+
   // ============================================
   // TEAM MEMBERS - OPTIMIZED
   // ============================================

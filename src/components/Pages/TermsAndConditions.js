@@ -1,6 +1,6 @@
 // src/components/Pages/TermsAndConditions.js
 import React from 'react';
-import { Shield, FileText, Mail, Phone, MapPin } from 'lucide-react';
+import {  FileText, Mail, Phone, MapPin } from 'lucide-react';
 
 const TermsAndConditions = () => {
   return (

@@ -1,6 +1,6 @@
 // src/components/Pages/PrivacyPolicy.js
 import React from 'react';
-import { Shield, Lock, Mail, Phone, MapPin } from 'lucide-react';
+import { Shield, Mail, Phone, MapPin } from 'lucide-react';
 
 const PrivacyPolicy = () => {
   return (

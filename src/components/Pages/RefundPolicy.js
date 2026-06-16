@@ -1,6 +1,6 @@
 // src/components/Pages/RefundPolicy.js
 import React from 'react';
-import { RefreshCw, AlertCircle, Mail, Phone, MapPin } from 'lucide-react';
+import { RefreshCw, AlertCircle, Mail, Phone } from 'lucide-react';
 
 const RefundPolicy = () => {
   return (

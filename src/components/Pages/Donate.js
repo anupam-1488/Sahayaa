@@ -1,8 +1,8 @@
 // src/components/Pages/Donate.js
 import React from 'react';
 import { 
-  Heart, Banknote, CreditCard, Gift, ShieldCheck, 
-  CheckCircle2, Info, ArrowRight, Share2 
+  Heart, CreditCard, Gift, ShieldCheck, 
+  CheckCircle2, Info,  Share2 
 } from 'lucide-react';
 
 const Donate = () => {

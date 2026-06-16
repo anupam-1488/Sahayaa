@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Target, Activity, Users, Heart, Globe, CheckCircle, TrendingUp, Star, User,
   Calendar, Clock, MapPin, ArrowRight, Image as ImageIcon, Eye,
-  GraduationCap, Utensils, Home as HomeIcon
+  GraduationCap, Utensils, 
 } from 'lucide-react';
 import { SAHAYAA_VALUES, CORE_VALUES } from '../../utils/constants';
 import { db } from '../../config/supabase';

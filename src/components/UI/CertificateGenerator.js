@@ -1,5 +1,5 @@
 // src/components/UI/CertificateGenerator.js - Simplified Version
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Download, Award, Calendar, User, X } from 'lucide-react';
 
 const CertificateGenerator = ({ volunteer, onClose }) => {
@@ -13,34 +13,11 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
     loadLogo();
   }, []);
 
-  useEffect(() => {
-    if (volunteer) {
-      generateCertificate();
-    }
-  }, [volunteer, logoImage]);
-
-  const loadLogo = () => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    
-    img.onload = () => {
-      setLogoImage(img);
-      setLogoLoadError(false);
-    };
-    
-    img.onerror = () => {
-      setLogoLoadError(true);
-      setLogoImage('fallback');
-    };
-    
-    img.src = '/logo.jpg';
-  };
-
-  const generateCertificate = async () => {
+  const generateCertificate = useCallback(async () => {
     setIsGenerating(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
@@ -55,7 +32,7 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       bgGradient.addColorStop(0, '#fafafa');
       bgGradient.addColorStop(0.5, '#ffffff');
       bgGradient.addColorStop(1, '#fafafa');
-      
+
       ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -63,7 +40,7 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       ctx.strokeStyle = '#16a34a';
       ctx.lineWidth = 4;
       ctx.strokeRect(35, 35, canvas.width - 70, canvas.height - 70);
-      
+
       ctx.strokeStyle = '#059669';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
@@ -71,7 +48,7 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       // Content area
       const contentY = 110;
       const contentHeight = canvas.height - 220;
-      
+
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.06)';
       ctx.shadowBlur = 12;
@@ -79,7 +56,7 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       ctx.shadowOffsetY = 3;
       roundRect(ctx, 70, contentY, canvas.width - 140, contentHeight, 15);
       ctx.fill();
-      
+
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
@@ -92,9 +69,9 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
         const logoSize = 400;
         const logoX = (canvas.width - logoSize) / 2;
         const logoY = (canvas.height - logoSize) / 2;
-        
+
         ctx.beginPath();
-        ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 0, 2 * Math.PI);
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, 2 * Math.PI);
         ctx.clip();
         ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
         ctx.restore();
@@ -102,7 +79,7 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
 
       // Header section
       const headerY = contentY + 50;
-      
+
       if (logoImage && logoImage !== 'fallback') {
         const smallLogoSize = 85;
         const orgTextWidth = 320;
@@ -110,29 +87,41 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
         const startX = (canvas.width - totalWidth) / 2;
         const logoX = startX;
         const textX = startX + smallLogoSize + 20;
-        
+
         ctx.save();
         ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
         ctx.shadowBlur = 8;
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
-        
+
         ctx.beginPath();
-        ctx.arc(logoX + smallLogoSize/2, headerY + smallLogoSize/2, smallLogoSize/2 + 2, 0, 2 * Math.PI);
+        ctx.arc(
+          logoX + smallLogoSize / 2,
+          headerY + smallLogoSize / 2,
+          smallLogoSize / 2 + 2,
+          0,
+          2 * Math.PI
+        );
         ctx.fillStyle = '#f8fafc';
         ctx.fill();
-        
+
         ctx.beginPath();
-        ctx.arc(logoX + smallLogoSize/2, headerY + smallLogoSize/2, smallLogoSize/2, 0, 2 * Math.PI);
+        ctx.arc(
+          logoX + smallLogoSize / 2,
+          headerY + smallLogoSize / 2,
+          smallLogoSize / 2,
+          0,
+          2 * Math.PI
+        );
         ctx.clip();
         ctx.drawImage(logoImage, logoX, headerY, smallLogoSize, smallLogoSize);
         ctx.restore();
-        
+
         ctx.fillStyle = '#16a34a';
         ctx.font = 'bold 46px "Times New Roman", serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText('SAHAYAA TRUST', textX, headerY + smallLogoSize/2);
+        ctx.fillText('SAHAYAA TRUST', textX, headerY + smallLogoSize / 2);
       } else {
         ctx.fillStyle = '#16a34a';
         ctx.font = 'bold 50px "Times New Roman", serif';
@@ -183,11 +172,11 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       const nameText = volunteer.name.toUpperCase();
       const nameMetrics = ctx.measureText(nameText);
       const nameWidth = nameMetrics.width;
-      
+
       ctx.fillStyle = '#f0fdf4';
       roundRect(ctx, (canvas.width - nameWidth - 50) / 2, nameY - 30, nameWidth + 50, 60, 8);
       ctx.fill();
-      
+
       ctx.fillStyle = '#1f2937';
       ctx.textAlign = 'center';
       ctx.fillText(nameText, canvas.width / 2, nameY);
@@ -197,26 +186,40 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       ctx.font = '16px "Arial", sans-serif';
       ctx.fillText(`Volunteer ID: ${volunteer.volunteer_id}`, canvas.width / 2, nameY + 30);
 
-      // Recognition text - SIMPLIFIED
+      // Recognition text
       ctx.fillStyle = '#374151';
       ctx.font = '22px "Times New Roman", serif';
-      ctx.fillText('has been a dedicated volunteer with Sahayaa Trust', canvas.width / 2, headerY + 360);
-      ctx.fillText('contributing to our mission of building a compassionate society', canvas.width / 2, headerY + 390);
-      
-      // Service details - SIMPLE
+      ctx.fillText(
+        'has been a dedicated volunteer with Sahayaa Trust',
+        canvas.width / 2,
+        headerY + 360
+      );
+      ctx.fillText(
+        'contributing to our mission of building a compassionate society',
+        canvas.width / 2,
+        headerY + 390
+      );
+
+      // Service details
       ctx.font = 'bold 24px "Times New Roman", serif';
       ctx.fillStyle = '#16a34a';
-      
-      const eventsText = volunteer.events_participated > 0 
-        ? `${volunteer.events_participated} ${volunteer.events_participated === 1 ? 'Event' : 'Events'}`
-        : 'Community Service';
-      
-      const hoursText = volunteer.total_hours > 0 
-        ? `${volunteer.total_hours} ${volunteer.total_hours === 1 ? 'Hour' : 'Hours'}`
-        : 'Volunteer Service';
+
+      const eventsText =
+        volunteer.events_participated > 0
+          ? `${volunteer.events_participated} ${volunteer.events_participated === 1 ? 'Event' : 'Events'}`
+          : 'Community Service';
+
+      const hoursText =
+        volunteer.total_hours > 0
+          ? `${volunteer.total_hours} ${volunteer.total_hours === 1 ? 'Hour' : 'Hours'}`
+          : 'Volunteer Service';
 
       if (volunteer.events_participated > 0 && volunteer.total_hours > 0) {
-        ctx.fillText(`Service Record: ${eventsText} • ${hoursText}`, canvas.width / 2, headerY + 430);
+        ctx.fillText(
+          `Service Record: ${eventsText} • ${hoursText}`,
+          canvas.width / 2,
+          headerY + 430
+        );
       } else if (volunteer.events_participated > 0) {
         ctx.fillText(`Service Record: ${eventsText}`, canvas.width / 2, headerY + 430);
       } else if (volunteer.total_hours > 0) {
@@ -233,19 +236,27 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       roundRect(ctx, 160, appreciationY, canvas.width - 320, 70, 10);
       ctx.fill();
       ctx.stroke();
-      
+
       ctx.fillStyle = '#059669';
       ctx.font = 'italic 20px "Times New Roman", serif';
       ctx.textAlign = 'center';
-      ctx.fillText('We sincerely appreciate your selfless service and dedication', canvas.width / 2, appreciationY + 25);
-      ctx.fillText('to making a positive difference in our community', canvas.width / 2, appreciationY + 50);
+      ctx.fillText(
+        'We sincerely appreciate your selfless service and dedication',
+        canvas.width / 2,
+        appreciationY + 25
+      );
+      ctx.fillText(
+        'to making a positive difference in our community',
+        canvas.width / 2,
+        appreciationY + 50
+      );
 
       // Signature section
       const signatureY = contentY + contentHeight - 120;
       const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
 
       ctx.fillStyle = '#374151';
@@ -262,27 +273,27 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
 
       ctx.strokeStyle = '#374151';
       ctx.lineWidth = 1;
-      
+
       const signatureSpacing = (canvas.width - 180) / 2;
       const leftSigX = 90 + signatureSpacing / 2;
-      const rightSigX = 90 + signatureSpacing + (signatureSpacing / 2);
+      const rightSigX = 90 + signatureSpacing + signatureSpacing / 2;
       const sigLineY = signatureY + 45;
       const lineLength = 120;
-      
+
       ctx.beginPath();
-      ctx.moveTo(leftSigX - lineLength/2, sigLineY);
-      ctx.lineTo(leftSigX + lineLength/2, sigLineY);
+      ctx.moveTo(leftSigX - lineLength / 2, sigLineY);
+      ctx.lineTo(leftSigX + lineLength / 2, sigLineY);
       ctx.stroke();
-      
+
       ctx.beginPath();
-      ctx.moveTo(rightSigX - lineLength/2, sigLineY);
-      ctx.lineTo(rightSigX + lineLength/2, sigLineY);
+      ctx.moveTo(rightSigX - lineLength / 2, sigLineY);
+      ctx.lineTo(rightSigX + lineLength / 2, sigLineY);
       ctx.stroke();
-      
+
       ctx.textAlign = 'center';
       ctx.font = 'bold 13px "Arial", sans-serif';
       ctx.fillStyle = '#374151';
-      
+
       ctx.fillText('Program Director', leftSigX, sigLineY + 18);
       ctx.fillText('Sahayaa Trust', leftSigX, sigLineY + 32);
 
@@ -295,7 +306,11 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
       ctx.font = '10px "Courier New", monospace';
       ctx.textAlign = 'right';
       ctx.fillText(`Certificate No: ${certNumber}`, canvas.width - 100, canvas.height - 30);
-      ctx.fillText(`Issued: ${new Date().toISOString().split('T')[0]}`, canvas.width - 100, canvas.height - 18);
+      ctx.fillText(
+        `Issued: ${new Date().toISOString().split('T')[0]}`,
+        canvas.width - 100,
+        canvas.height - 18
+      );
 
       drawProfessionalCorners(ctx, canvas);
 
@@ -305,44 +320,67 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
     } finally {
       setIsGenerating(false);
     }
+  }, [volunteer, logoImage]);
+
+  useEffect(() => {
+    if (volunteer) {
+      generateCertificate();
+    }
+  }, [volunteer, logoImage, generateCertificate]);
+
+  const loadLogo = () => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      setLogoImage(img);
+      setLogoLoadError(false);
+    };
+
+    img.onerror = () => {
+      setLogoLoadError(true);
+      setLogoImage('fallback');
+    };
+
+    img.src = '/logo.jpg';
   };
 
   const drawProfessionalCorners = (ctx, canvas) => {
     const cornerSize = 25;
     const offset = 70;
-    
+
     ctx.strokeStyle = '#16a34a';
     ctx.lineWidth = 1.5;
     ctx.lineCap = 'round';
-    
+
     // Top-left corner
     ctx.beginPath();
     ctx.moveTo(offset, offset + cornerSize);
     ctx.lineTo(offset, offset);
     ctx.lineTo(offset + cornerSize, offset);
     ctx.stroke();
-    
+
     // Top-right corner
     ctx.beginPath();
     ctx.moveTo(canvas.width - offset - cornerSize, offset);
     ctx.lineTo(canvas.width - offset, offset);
     ctx.lineTo(canvas.width - offset, offset + cornerSize);
     ctx.stroke();
-    
+
     // Bottom-left corner
     ctx.beginPath();
     ctx.moveTo(offset, canvas.height - offset - cornerSize);
     ctx.lineTo(offset, canvas.height - offset);
     ctx.lineTo(offset + cornerSize, canvas.height - offset);
     ctx.stroke();
-    
+
     // Bottom-right corner
     ctx.beginPath();
     ctx.moveTo(canvas.width - offset - cornerSize, canvas.height - offset);
     ctx.lineTo(canvas.width - offset, canvas.height - offset);
     ctx.lineTo(canvas.width - offset, canvas.height - offset - cornerSize);
     ctx.stroke();
-    
+
     ctx.lineCap = 'butt';
   };
 
@@ -377,14 +415,14 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
                 style={{ aspectRatio: '1400/990' }}
               />
             </div>
-            
+
             {isGenerating && (
               <div className="flex items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                 <span className="ml-2 text-gray-600">Generating certificate...</span>
               </div>
             )}
-            
+
             {logoLoadError && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-yellow-700 text-sm">
@@ -405,25 +443,23 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
                     <p className="text-sm text-gray-600">ID: {volunteer.volunteer_id}</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-5 h-5 text-green-600" />
                     <span className="text-sm">
-                      {volunteer.events_participated > 0 
+                      {volunteer.events_participated > 0
                         ? `${volunteer.events_participated} events participated`
-                        : 'Community service volunteer'
-                      }
+                        : 'Community service volunteer'}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Award className="w-5 h-5 text-green-600" />
                     <span className="text-sm">
-                      {volunteer.total_hours > 0 
+                      {volunteer.total_hours > 0
                         ? `${volunteer.total_hours} hours of service`
-                        : 'Dedicated volunteer service'
-                      }
+                        : 'Dedicated volunteer service'}
                     </span>
                   </div>
                 </div>
@@ -440,7 +476,7 @@ const CertificateGenerator = ({ volunteer, onClose }) => {
                   <Download className="w-5 h-5" />
                   <span>Download Certificate</span>
                 </button>
-                
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h6 className="font-medium text-blue-800 mb-2">✨ Certificate Features:</h6>
                   <ul className="text-sm text-blue-700 space-y-1">

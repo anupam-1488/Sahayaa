@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Calendar, Plus, Edit3, Trash2, Clock, MapPin, Users, Mail, Download, 
-  Image as ImageIcon, Eye, Upload, Star, Filter
+  Calendar, Plus, Edit3, Trash2,  MapPin,  Download, 
+  Image as ImageIcon,  Star, 
 } from 'lucide-react';
 import EventForm from '../Forms/EventForm';
 import EventCardGenerator from '../UI/EventCardGenerator';

@@ -1,6 +1,6 @@
 // src/components/Pages/Team.js - Updated with Privacy Protection
 import React, { useState } from 'react';
-import { Users, Plus, Edit3, Trash2, User, Mail, Phone, MessageCircle, Shield, Eye, EyeOff } from 'lucide-react';
+import { Users, Plus, Edit3, Trash2, User, Mail, Phone, MessageCircle, Shield} from 'lucide-react';
 import MemberForm from '../Forms/MemberForm';
 import TestimonialForm from '../Forms/TestimonialForm';
 
@@ -35,28 +35,28 @@ const Team = ({
     }
   };
 
-  const handleDeleteTestimonial = async (id) => {
-    if (window.confirm('Are you sure you want to delete this testimonial?')) {
-      if (onTestimonialDelete) {
-        const result = await onTestimonialDelete(id);
-        if (!result.success) {
-          alert('Failed to delete testimonial: ' + result.error);
-        }
-      } else {
-        setTestimonials(testimonials.filter(testimonial => testimonial.id !== id));
-      }
-    }
-  };
+  // const handleDeleteTestimonial = async (id) => {
+  //   if (window.confirm('Are you sure you want to delete this testimonial?')) {
+  //     if (onTestimonialDelete) {
+  //       const result = await onTestimonialDelete(id);
+  //       if (!result.success) {
+  //         alert('Failed to delete testimonial: ' + result.error);
+  //       }
+  //     } else {
+  //       setTestimonials(testimonials.filter(testimonial => testimonial.id !== id));
+  //     }
+  //   }
+  // };
 
   const startEditMember = (member) => {
     setEditingMember(member);
     setShowMemberForm(true);
   };
 
-  const startEditTestimonial = (testimonial) => {
-    setEditingTestimonial(testimonial);
-    setShowTestimonialForm(true);
-  };
+  // const startEditTestimonial = (testimonial) => {
+  //   setEditingTestimonial(testimonial);
+  //   setShowTestimonialForm(true);
+  // };
 
   // Sort members by position (ascending order)
   const sortedMembers = [...members].sort((a, b) => {

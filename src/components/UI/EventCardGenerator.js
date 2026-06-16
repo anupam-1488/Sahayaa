@@ -1,5 +1,5 @@
 // src/components/UI/EventCardGenerator.js
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Download, Share2, Calendar, Clock, MapPin, Users } from 'lucide-react';
 
 const EventCardGenerator = ({ event, onClose }) => {
@@ -12,43 +12,21 @@ const EventCardGenerator = ({ event, onClose }) => {
     loadLogo();
   }, []);
 
-  useEffect(() => {
-    if (event && logoImage) {
-      generateCard();
-    }
-  }, [event, logoImage]);
-
-  const loadLogo = () => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      setLogoImage(img);
-    };
-    img.onerror = () => {
-      // If logo fails to load, we'll generate without it
-      console.warn('Logo failed to load, generating card without logo');
-      setLogoImage('fallback');
-    };
-    // Try to load the logo from public folder
-    img.src = '/logo.jpg';
-  };
-
-  const generateCard = async () => {
+  const generateCard = useCallback(async () => {
     setIsGenerating(true);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // Set canvas size (Instagram post size: 1080x1080)
     canvas.width = 1080;
     canvas.height = 1080;
 
     try {
       // Background gradient
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#16a34a'); // Green-600
-      gradient.addColorStop(0.6, '#059669'); // Emerald-600
-      gradient.addColorStop(1, '#0d9488'); // Teal-600
-      
+      gradient.addColorStop(0, '#16a34a');
+      gradient.addColorStop(0.6, '#059669');
+      gradient.addColorStop(1, '#0d9488');
+
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -65,8 +43,7 @@ const EventCardGenerator = ({ event, onClose }) => {
       // Main content area
       const contentY = 120;
       const contentHeight = canvas.height - 240;
-      
-      // White content background with rounded corners
+
       ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
       ctx.roundRect(60, contentY, canvas.width - 120, contentHeight, 20);
       ctx.fill();
@@ -78,33 +55,36 @@ const EventCardGenerator = ({ event, onClose }) => {
         const logoSize = 300;
         const logoX = (canvas.width - logoSize) / 2;
         const logoY = (canvas.height - logoSize) / 2;
-        
+
         ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
         ctx.restore();
       }
 
       // Header section with logo
       const headerY = contentY + 40;
-      
-      // Small logo in header
+
       if (logoImage && logoImage !== 'fallback') {
         const smallLogoSize = 60;
         const logoX = (canvas.width - smallLogoSize) / 2 - 100;
-        
+
         ctx.save();
         ctx.beginPath();
-        ctx.arc(logoX + smallLogoSize/2, headerY + smallLogoSize/2, smallLogoSize/2, 0, 2 * Math.PI);
+        ctx.arc(
+          logoX + smallLogoSize / 2,
+          headerY + smallLogoSize / 2,
+          smallLogoSize / 2,
+          0,
+          2 * Math.PI
+        );
         ctx.clip();
         ctx.drawImage(logoImage, logoX, headerY, smallLogoSize, smallLogoSize);
         ctx.restore();
-        
-        // Organization name next to logo
+
         ctx.fillStyle = '#16a34a';
         ctx.font = 'bold 42px Arial, sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText('SAHAYAA TRUST', logoX + smallLogoSize + 20, headerY + 35);
       } else {
-        // Fallback - just text with heart emoji
         ctx.fillStyle = '#16a34a';
         ctx.font = 'bold 48px Arial, sans-serif';
         ctx.textAlign = 'center';
@@ -121,19 +101,18 @@ const EventCardGenerator = ({ event, onClose }) => {
       ctx.fillStyle = '#1f2937';
       ctx.font = 'bold 56px Arial, sans-serif';
       ctx.textAlign = 'center';
-      
-      // Wrap long titles
+
       const title = event.title;
       const maxWidth = canvas.width - 200;
       const words = title.split(' ');
       let line = '';
       let y = contentY + 220;
-      
+
       for (let n = 0; n < words.length; n++) {
         const testLine = line + words[n] + ' ';
         const metrics = ctx.measureText(testLine);
         const testWidth = metrics.width;
-        
+
         if (testWidth > maxWidth && n > 0) {
           ctx.fillText(line, canvas.width / 2, y);
           line = words[n] + ' ';
@@ -149,22 +128,21 @@ const EventCardGenerator = ({ event, onClose }) => {
       ctx.font = '36px Arial, sans-serif';
       ctx.fillStyle = '#374151';
 
-      // Date with icon
       ctx.fillText(`📅 ${formatDate(event.date)}`, canvas.width / 2, detailsY);
-      
-      // Time with icon
       ctx.fillText(`🕐 ${event.time}`, canvas.width / 2, detailsY + 50);
-      
-      // Location with icon
+
       ctx.font = '32px Arial, sans-serif';
-      const location = event.location.length > 40 ? event.location.substring(0, 40) + '...' : event.location;
+      const location =
+        event.location.length > 40
+          ? event.location.substring(0, 40) + '...'
+          : event.location;
       ctx.fillText(`📍 ${location}`, canvas.width / 2, detailsY + 100);
 
       // Category badge
       ctx.fillStyle = '#16a34a';
       ctx.roundRect(canvas.width / 2 - 100, detailsY + 140, 200, 50, 25);
       ctx.fill();
-      
+
       ctx.fillStyle = 'white';
       ctx.font = 'bold 28px Arial, sans-serif';
       ctx.fillText(event.category, canvas.width / 2, detailsY + 175);
@@ -186,14 +164,21 @@ const EventCardGenerator = ({ event, onClose }) => {
       // Call to action
       ctx.fillStyle = '#16a34a';
       ctx.font = 'bold 36px Arial, sans-serif';
-      ctx.fillText('Join us in making a difference!', canvas.width / 2, contentY + contentHeight - 80);
+      ctx.fillText(
+        'Join us in making a difference!',
+        canvas.width / 2,
+        contentY + contentHeight - 80
+      );
 
       // Social media handles and hashtags
       ctx.fillStyle = '#6b7280';
       ctx.font = '24px Arial, sans-serif';
-      ctx.fillText('@SahayaaTrust | #CommunitySupport | #MakeADifference', canvas.width / 2, contentY + contentHeight - 40);
+      ctx.fillText(
+        '@SahayaaTrust | #CommunitySupport | #MakeADifference',
+        canvas.width / 2,
+        contentY + contentHeight - 40
+      );
 
-      // Decorative elements
       drawDecorative(ctx, canvas);
 
       setCardGenerated(true);
@@ -202,65 +187,59 @@ const EventCardGenerator = ({ event, onClose }) => {
     } finally {
       setIsGenerating(false);
     }
+  }, [event, logoImage]);
+
+  useEffect(() => {
+    if (event && logoImage) {
+      generateCard();
+    }
+  }, [event, logoImage, generateCard]);
+
+  const loadLogo = () => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      setLogoImage(img);
+    };
+    img.onerror = () => {
+      console.warn('Logo failed to load, generating card without logo');
+      setLogoImage('fallback');
+    };
+    img.src = '/logo.jpg';
   };
 
   const drawDecorative = (ctx, canvas) => {
-    // Corner decorations
     const corners = [
       { x: 80, y: 140 },
       { x: canvas.width - 80, y: 140 },
       { x: 80, y: canvas.height - 140 },
-      { x: canvas.width - 80, y: canvas.height - 140 }
+      { x: canvas.width - 80, y: canvas.height - 140 },
     ];
 
     ctx.strokeStyle = '#16a34a';
     ctx.lineWidth = 4;
-    
-    corners.forEach(corner => {
+
+    corners.forEach((corner) => {
       ctx.beginPath();
-      // Draw decorative corner elements
-      if (corner.x < canvas.width / 2 && corner.y < canvas.height / 2) {
-        // Top-left
-        ctx.moveTo(corner.x - 15, corner.y);
-        ctx.lineTo(corner.x + 15, corner.y);
-        ctx.moveTo(corner.x, corner.y - 15);
-        ctx.lineTo(corner.x, corner.y + 15);
-      } else if (corner.x > canvas.width / 2 && corner.y < canvas.height / 2) {
-        // Top-right
-        ctx.moveTo(corner.x - 15, corner.y);
-        ctx.lineTo(corner.x + 15, corner.y);
-        ctx.moveTo(corner.x, corner.y - 15);
-        ctx.lineTo(corner.x, corner.y + 15);
-      } else if (corner.x < canvas.width / 2 && corner.y > canvas.height / 2) {
-        // Bottom-left
-        ctx.moveTo(corner.x - 15, corner.y);
-        ctx.lineTo(corner.x + 15, corner.y);
-        ctx.moveTo(corner.x, corner.y - 15);
-        ctx.lineTo(corner.x, corner.y + 15);
-      } else {
-        // Bottom-right
-        ctx.moveTo(corner.x - 15, corner.y);
-        ctx.lineTo(corner.x + 15, corner.y);
-        ctx.moveTo(corner.x, corner.y - 15);
-        ctx.lineTo(corner.x, corner.y + 15);
-      }
+      ctx.moveTo(corner.x - 15, corner.y);
+      ctx.lineTo(corner.x + 15, corner.y);
+      ctx.moveTo(corner.x, corner.y - 15);
+      ctx.lineTo(corner.x, corner.y + 15);
       ctx.stroke();
     });
 
-    // Add some decorative hearts
     ctx.fillStyle = 'rgba(220, 38, 38, 0.3)';
     ctx.font = '40px Arial, sans-serif';
     ctx.textAlign = 'center';
-    
-    // Scattered hearts as decoration
+
     const hearts = [
       { x: 150, y: 200 },
       { x: canvas.width - 150, y: 250 },
       { x: 120, y: canvas.height - 200 },
-      { x: canvas.width - 120, y: canvas.height - 180 }
+      { x: canvas.width - 120, y: canvas.height - 180 },
     ];
-    
-    hearts.forEach(heart => {
+
+    hearts.forEach((heart) => {
       ctx.fillText('♥', heart.x, heart.y);
     });
   };
@@ -271,7 +250,7 @@ const EventCardGenerator = ({ event, onClose }) => {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -285,26 +264,26 @@ const EventCardGenerator = ({ event, onClose }) => {
 
   const shareCard = async () => {
     const canvas = canvasRef.current;
-    
+
     if (navigator.share && canvas.toBlob) {
       canvas.toBlob(async (blob) => {
         const file = new File([blob], `sahayaa-${event.title}-invitation.png`, {
-          type: 'image/png'
+          type: 'image/png',
         });
-        
+
         try {
           await navigator.share({
             title: `${event.title} - Sahayaa Trust`,
             text: `Join us for ${event.title} on ${formatDate(event.date)}`,
-            files: [file]
+            files: [file],
           });
         } catch (error) {
           console.error('Error sharing:', error);
-          downloadCard(); // Fallback to download
+          downloadCard();
         }
       });
     } else {
-      downloadCard(); // Fallback to download
+      downloadCard();
     }
   };
 
@@ -332,7 +311,7 @@ const EventCardGenerator = ({ event, onClose }) => {
                 style={{ aspectRatio: '1/1' }}
               />
             </div>
-            
+
             {isGenerating && (
               <div className="flex items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
@@ -383,7 +362,7 @@ const EventCardGenerator = ({ event, onClose }) => {
                     <Download className="w-5 h-5" />
                     <span>Download Image</span>
                   </button>
-                  
+
                   <button
                     onClick={shareCard}
                     className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
@@ -392,7 +371,7 @@ const EventCardGenerator = ({ event, onClose }) => {
                     <span>Share</span>
                   </button>
                 </div>
-                
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h6 className="font-medium text-blue-800 mb-2">Perfect for:</h6>
                   <ul className="text-sm text-blue-700 space-y-1">
@@ -436,7 +415,7 @@ const EventCardGenerator = ({ event, onClose }) => {
 };
 
 // Helper function for rounded rectangles in canvas
-CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
   this.beginPath();
   this.moveTo(x + radius, y);
   this.arcTo(x + width, y, x + width, y + height, radius);

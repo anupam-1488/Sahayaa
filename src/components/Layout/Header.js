@@ -1,6 +1,6 @@
 // src/components/Layout/Header.js
 import React, { useState } from 'react';
-import { Heart, User, Lock, LogOut, Menu, X } from 'lucide-react';
+import {  User, Lock, LogOut, Menu, X } from 'lucide-react';
 import { NAVIGATION_ITEMS } from '../../utils/constants';
 
 const Header = ({ 
