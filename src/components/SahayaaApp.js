@@ -98,29 +98,50 @@ const SahayaaApp = () => {
   }, []);
 
   // --- AUTH ---
+  // const checkAuthState = useCallback(async () => {
+  //   try {
+  //     const {
+  //       data: { session },
+  //       error,
+  //     } = await auth.getSession();
+
+  //     if (error) throw error;
+
+  //     setUser(session?.user || null);
+
+  //     const {
+  //       data: { subscription },
+  //     } = auth.onAuthStateChange((_event, session) => {
+  //       setUser(session?.user || null);
+  //     });
+
+  //     return () => subscription.unsubscribe();
+  //   } catch (error) {
+  //     console.error('Auth check error:', error);
+  //     setUser(null);
+  //   }
+  // }, []);
   const checkAuthState = useCallback(async () => {
-    try {
-      const {
-        data: { session },
-        error,
-      } = await auth.getSession();
+  try {
+    // auth.getSession() already returns { session, error } directly
+    const { session, error } = await auth.getSession();
 
-      if (error) throw error;
+    if (error) throw error;
 
+    setUser(session?.user || null);
+
+    const {
+      data: { subscription },
+    } = auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+    });
 
-      const {
-        data: { subscription },
-      } = auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user || null);
-      });
-
-      return () => subscription.unsubscribe();
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setUser(null);
-    }
-  }, []);
+    return () => subscription.unsubscribe();
+  } catch (error) {
+    console.error('Auth check error:', error);
+    setUser(null);
+  }
+}, []);
 
   // --- DATA ---
   const loadStats = useCallback(async () => {
